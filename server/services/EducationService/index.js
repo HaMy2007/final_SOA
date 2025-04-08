@@ -10,8 +10,8 @@ app.use(cors());
 require("./config/db");
 app.use(express.json());
 
-app.use("/api", subjectRoutes);
-app.use("/api", semesterRoutes);
+app.use("/api/subjects", subjectRoutes);
+app.use("/api/semesters", semesterRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

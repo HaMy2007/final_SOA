@@ -9,7 +9,7 @@ app.use(cors());
 require("./config/db");
 app.use(express.json());
 
-app.use("/api", scoreRoutes);
+app.use("/api/students", scoreRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

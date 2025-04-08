@@ -8,14 +8,12 @@ const runService = (name, command) => {
   process.stderr.on("data", (data) => console.error(`[${name} LỖI] ${data}`));
 };
 
-// Khởi động API Gateway trước
-runService("API Gateway", "cd api-gateway && npm start");
+runService("API Gateway", "cd api-gateway && npm start dev");
 
-// Chờ 2 giây rồi chạy các service còn lại (tránh bị lỗi cổng)
 setTimeout(() => {
     const services = ["ClassService", "EducationService", "ScoreService", "UserService"];
     services.forEach(service => {
-        runService(service, `cd services/${service} && npm start`);
+        runService(service, `cd services/${service} && npm start dev`);
     });
 }, 2000);
 
