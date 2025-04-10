@@ -5,8 +5,8 @@ const UserSchema = new Schema(
     {
         name: { type: String, required: true },
         role: {
-            type: [String],
-            enum: ['student', 'advisor'], 
+            type: String,
+            enum: ['student', 'advisor', 'admin'], 
             required: true
         },
         gender: { type: String, enum: ['male', 'female', 'other'], required: true },

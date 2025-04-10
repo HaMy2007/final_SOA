@@ -1,15 +1,55 @@
-import { MockStudents } from "../../data/MockUsers";
-import { mockGrades } from "../../data/mockGrades";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const PersonalScore = () => {
-  const tdt_id = localStorage.getItem("tdt_id") || "2";
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const tdt_id = user.tdt_id;
 
-  const userDetail = MockStudents[tdt_id];
+  const [grades, setGrades] = useState<any[]>([]);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const totalCredits = mockGrades.reduce((sum, g) => sum + g.credits, 0);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Lấy thông tin người dùng
+        const userRes = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUserDetail(userRes.data);
+        const studentId = userRes.data._id;
+        // Lấy điểm
+        const scoreRes = await axios.get(`http://localhost:4002/api/students/${studentId}/scores-by-semester`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const groupedData = scoreRes.data;
+
+        // Chuyển dữ liệu từ object theo kỳ thành mảng
+        const allGrades = Object.entries(groupedData).flatMap(([semesterName, gradeArray]) =>
+          (gradeArray as any[]).map(g => ({ ...g, semester_name: semesterName }))
+        );
+
+        setGrades(allGrades);
+
+      } catch (err) {
+        console.error("Lỗi khi tải dữ liệu điểm:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [tdt_id, token]);
+
+  const totalCredits = grades.reduce((sum, g) => sum + (g.credit || 0), 0);
   const avgGrade =
-    mockGrades.reduce((sum, g) => sum + g.credits * g.grade10, 0) /
-    totalCredits;
+    totalCredits > 0
+      ? grades.reduce((sum, g) => sum + (g.score || 0) * g.credit, 0) / totalCredits
+      : 0;
+
+  if (loading) return <div className="p-6">Đang tải dữ liệu...</div>;
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
@@ -20,7 +60,7 @@ const PersonalScore = () => {
             <strong>TDTU ID:</strong> {userDetail.tdt_id}
           </p>
           <p className="text-sm mb-1">
-            <strong>CPA:</strong> 3.33
+            <strong>CPA:</strong> {avgGrade.toFixed(2)}
           </p>
           <p className="text-sm mb-1">
             <strong>Số tín chỉ:</strong> {totalCredits}
@@ -48,13 +88,13 @@ const PersonalScore = () => {
               </tr>
             </thead>
             <tbody>
-              {mockGrades.map((grade, index) => (
+              {grades.map((grade, index) => (
                 <tr key={index} className="border-t text-sm">
-                  <td className="p-3">{grade.subjectName}</td>
-                  <td className="p-3">{grade.subjectCode}</td>
-                  <td className="p-3 text-center">{grade.credits}</td>
-                  <td className="p-3 text-center">{grade.grade10}</td>
-                  <td className="p-3">{grade.semester}</td>
+                  <td className="p-3">{grade.subject_name}</td>
+                  <td className="p-3">{grade.subject_code}</td>
+                  <td className="p-3 text-center">{grade.credit}</td>
+                  <td className="p-3 text-center">{grade.score ?? '-'}</td>
+                  <td className="p-3">{grade.semester_name}</td>
                 </tr>
               ))}
               <tr className="font-semibold border-t">

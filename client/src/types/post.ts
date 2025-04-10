@@ -1,12 +1,12 @@
 import { CommentType } from "./comment";
 
 export interface PostType {
-  id: string;
-  authorId: string;
-  authorName: string;
-  authorRole: string;
+  _id: string;
+  author_id: string;
+  author_name: string;
+  class_id: string;
   content: string;
-  createdAt: string;
-  likes: string[];
+  liked_by: string[];
   comments: CommentType[];
+  created_at: string;
 }

@@ -26,6 +26,11 @@ app.use("/user", createProxyMiddleware({
     changeOrigin: true , 
     logLevel: "debug"
 }));
+app.use("/forum", createProxyMiddleware({ 
+    target: "http://localhost:4004", 
+    changeOrigin: true , 
+    logLevel: "debug"
+}));
 
 const PORT = 1234;
 app.listen(PORT, () => {
