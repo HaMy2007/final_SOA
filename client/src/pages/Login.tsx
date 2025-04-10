@@ -101,7 +101,7 @@ const Login = () => {
 
             <button
               type="button"
-              onClick={navigateToResetPasswordPage}
+              onClick={() => navigate("/resetPassword")}
               className="flex justify-between items-start flex-col gap-4 mb-4"
             >
               <span className="text-blue-950 cursor-pointer">
