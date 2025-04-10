@@ -32,11 +32,6 @@ const Forum = () => {
 
   const fetchUserAndPosts = async () => {
     try {
-      // const userRes = await axios.get(`http://localhost:4000/api/students/${storedUser._id}/class`, {
-      //   headers: { Authorization: `Bearer ${token}` },
-      // });
-  
-      // const classId = userRes.data?.class?.class_id;
       const classId = await fetchClassId();
       if (!classId) {
         console.error("Không tìm thấy class_id");
