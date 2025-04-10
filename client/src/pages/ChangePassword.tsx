@@ -1,58 +1,55 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import changepw from "../assets/changepw.jpg";
 import logo from "../assets/logo.png";
-import { MockUsers } from "../data/MockUsers";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const ChangePassword = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"verifyOld" | "resetNew">("verifyOld");
-  const [currentUserIndex, setCurrentUserIndex] = useState<number | null>(null);
+  const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [oldPassword, setOldPassword] = useState("");
+
   const [isShowOldPassword, setIsShowOldPassword] = useState(false);
   const [isShowNewPassword, setIsShowNewPassword] = useState(false);
   const [isShowConfirmPassword, setIsShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      const index = MockUsers.findIndex((user) => user.id === parsedUser.id);
-
-      if (index !== -1) {
-        setCurrentUserIndex(index);
-      } else {
-        setError("Không tìm thấy tài khoản!");
-      }
-    } else {
-      setError("Bạn chưa đăng nhập. Tạm thời đang dùng user test.");
-      const index = MockUsers.findIndex((user) => user.username === "student");
-      if (index !== -1) {
-        setCurrentUserIndex(index);
-      }
+    if (!storedUser) {
+      setError("Bạn chưa đăng nhập.");
     }
   }, []);
 
-  const handleVerifyOldPassword = (e: React.FormEvent) => {
+  const handleVerifyOldPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (currentUserIndex !== null) {
-      const currentUser = MockUsers[currentUserIndex];
-      if (oldPassword === currentUser.password) {
-        setStep("resetNew");
-      } else {
-        setError("Mật khẩu cũ không chính xác.");
-      }
+    try {
+      // Gọi API xác thực tạm thời bằng cách thử login (hoặc qua backend change-password)
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:4003/api/auth/verify-password",
+        { oldPassword },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setStep("resetNew");
+    } catch (err: any) {
+      setError("Mật khẩu cũ không đúng.");
     }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setMessage("");
@@ -67,18 +64,33 @@ const ChangePassword = () => {
       return;
     }
 
-    if (currentUserIndex !== null) {
-      if (newPassword === oldPassword) {
-        setError("Mật khẩu mới không được giống mật khẩu cũ.");
-        return;
-      }
+    if (newPassword === oldPassword) {
+      setError("Mật khẩu mới không được giống mật khẩu cũ.");
+      return;
+    }
 
-      MockUsers[currentUserIndex].password = newPassword;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:4003/api/auth/change-password",
+        {
+          oldPassword,
+          newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       setMessage("Đổi mật khẩu thành công! Đang chuyển về trang đăng nhập...");
-
       setTimeout(() => {
-        navigate("/");
+        localStorage.clear();
+        navigate("/login");
       }, 2000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Lỗi đổi mật khẩu.");
     }
   };
 

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MockUsers } from "../data/MockUsers";
 import logo from "../assets/logo.png";
 import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import biểu tượng mắt
+import axios from "axios";
 
 const NewPassword = () => {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId } = useParams(); // token nằm ở đây
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -34,20 +34,22 @@ const NewPassword = () => {
         throw new Error("Mật khẩu phải có ít nhất 6 ký tự.");
       }
 
-      const userIndex = MockUsers.findIndex((user) => user.id === userId);
-      if (userIndex === -1) {
-        throw new Error("Không tìm thấy người dùng.");
-      }
-
-      MockUsers[userIndex].password = newPassword;
+      const response = await axios.post("http://localhost:4003/api/auth/reset-password", {
+        token: userId,
+        newPassword,
+      });
 
       setSuccess("Mật khẩu đã được cập nhật thành công!");
-
       setTimeout(() => {
         navigate("/login");
       }, 3000);
     } catch (error: any) {
-      setError(error.message);
+      console.error("Reset Error:", error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError("Lỗi không xác định. Vui lòng thử lại sau.");
+      }
     } finally {
       setIsLoading(false);
     }

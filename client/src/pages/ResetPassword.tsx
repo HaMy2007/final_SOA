@@ -1,8 +1,8 @@
 import { useState } from "react";
 import forgotpw from "../assets/forgotpw.jpg";
 import logo from "../assets/logo.png";
-import { MockUsers } from "../data/MockUsers";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import emailjs from "@emailjs/browser";
 import { init } from "@emailjs/browser";
 
@@ -50,47 +50,43 @@ const ResetPassword = () => {
         throw new Error("Vui lòng nhập email của bạn.");
       }
 
-      const user = MockUsers.find((user) => user.email === email);
-      if (!user) {
-        throw new Error("Email này chưa được đăng ký trong hệ thống.");
-      }
-
-      const templateParams = {
+      const response = await axios.post("http://localhost:4003/api/auth/send-reset-link", {
         email: email.trim(),
-        link: `http://localhost:5173/new-password/${user.id}`,
-      };
+      });
 
-      console.log("Sending email with params:", templateParams);
-
-      const result = await emailjs.send(
-        "service_j43pzyj",
-        "template_gabd9fd",
-        templateParams,
-        "5j21xEi95fEwoKMZ-"
-      );
-
-      console.log("Email result:::", result);
-
-      setMessage(
-        "Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư."
-      );
-
+      setMessage(response.data.message || "Email đặt lại mật khẩu đã được gửi.");
       setTimeout(() => {
         navigate("/");
       }, 3000);
+
+      // const templateParams = {
+      //   email: email.trim(),
+      //   link: `http://localhost:5173/new-password/${user.id}`,
+      // };
+
+      // console.log("Sending email with params:", templateParams);
+
+      // const result = await emailjs.send(
+      //   "service_j43pzyj",
+      //   "template_gabd9fd",
+      //   templateParams,
+      //   "5j21xEi95fEwoKMZ-"
+      // );
+
+      // console.log("Email result:::", result);
+
+      // setMessage(
+      //   "Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư."
+      // );
+
+      
     } catch (error: any) {
-      console.error("Error details:", error);
-      if (error.text) {
-        console.error("Error text:", error.text);
-      }
-      if (error.status) {
-        console.error("Error status:", error.status);
-      }
+      console.error("Lỗi gửi email:", error.response?.data || error.message);
       setError(
-        `Lỗi gửi email: ${
-          error.text || error.message || "Vui lòng thử lại sau"
-        }`
+        error.response?.data?.message || error.message || "Vui lòng thử lại sau"
       );
+    }finally {
+      setIsLoading(false);
     }
   };
 
