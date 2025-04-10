@@ -51,6 +51,7 @@ exports.importSemesters = async (req, res) => {
   
       const semester = new Semester({
         semester_name: s.semester_name,
+        semester_code: s.semester_code,
         start_date: new Date(s.start_date),
         end_date: new Date(s.end_date)
       });

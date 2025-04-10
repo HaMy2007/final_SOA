@@ -1,8 +1,10 @@
 const User = require('../models/User');
+const LoginInfo = require('../models/LoginInfo');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const csv = require('csv-parser');
 const xlsx = require('xlsx');
+const bcrypt = require('bcrypt');
 
 exports.getUsersByIds = async (req, res) => {
     try {
@@ -74,6 +76,36 @@ exports.getUserById = async (req, res) => {
     }
 };
 
+exports.getUserByTdtId = async (req, res) => {
+  try {
+    const user = await User.findOne({ tdt_id: req.params.tdt_id });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    console.error('[ERROR] Lấy user theo tdt_id:', err.message);
+    res.status(500).json({ message: 'Lỗi server khi lấy người dùng' });
+  }
+};
+
+exports.getUserIdsByEmails = async (req, res) => {
+  try {
+    const { emails } = req.body;
+    if (!Array.isArray(emails)) return res.status(400).json({ message: "Danh sách emails không hợp lệ" });
+
+    const users = await User.find({ email: { $in: emails } }, "_id");
+    const userIds = users.map(u => u._id);
+
+    res.status(200).json({ userIds });
+  } catch (error) {
+    console.error("[Get User IDs ERROR]", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 exports.importUsersFromFile = async (req, res) => {
   try {
     const { class_id } = req.body;
@@ -104,47 +136,6 @@ exports.importUsersFromFile = async (req, res) => {
   } catch (err) {
     console.error('[Import Users ERROR]', err.message);
     res.status(500).json({ message: 'Lỗi server khi import' });
-  }
-};
-
-async function insertUsers(users, res) {
-  const inserted = [];
-  for (const u of users) {
-    if (!u.email || !u.name || !u.tdtu_id || !u.gender || !u.phone_number || !u.date_of_birth) continue;
-
-    const exist = await User.findOne({ $or: [{ email: u.email }, { tdtu_id: u.tdtu_id }] });
-    if (exist) continue;
-
-    const user = new User({
-      name: u.name,
-      email: u.email,
-      phone_number: u.phone_number,
-      gender: u.gender,
-      address: u.address,
-      role: [u.role],
-      tdt_id: u.tdtu_id,
-      date_of_birth: new Date(u.date_of_birth),
-    });
-
-    const saved = await user.save();
-    inserted.push(saved);
-  }
-
-  res.status(200).json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
-}
-
-exports.getUserIdsByEmails = async (req, res) => {
-  try {
-    const { emails } = req.body;
-    if (!Array.isArray(emails)) return res.status(400).json({ message: "Danh sách emails không hợp lệ" });
-
-    const users = await User.find({ email: { $in: emails } }, "_id");
-    const userIds = users.map(u => u._id);
-
-    res.status(200).json({ userIds });
-  } catch (error) {
-    console.error("[Get User IDs ERROR]", error.message);
-    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -189,7 +180,6 @@ async function insertUsers(users, res) {
       name,
       role,
       tdt_id,
-      username,
       gender,
       phone_number,
       date_of_birth
@@ -206,39 +196,43 @@ async function insertUsers(users, res) {
       continue;
     }
 
-    // const hashedPassword = await bcrypt.hash(password.toString(), 10);
+    const trimmedRole = (role || 'student').trim().toLowerCase();
 
     const newUser = new User({
       email: email.trim(),
       address: address?.trim() || "",
       name: name.trim(),
-      role: [role.trim()],
+      role: [trimmedRole],
       tdt_id: tdt_id.trim(),
-      username: username.trim(),
-      // password: hashedPassword,
       gender: gender.trim(),
       phone_number: phone_number.trim(),
       date_of_birth: new Date(date_of_birth)
     });
 
-    const saved = await newUser.save();
-    inserted.push(saved);
+    const savedUser = await newUser.save();
+
+    if (['student', 'advisor'].includes(trimmedRole)) {
+      const existedLogin = await LoginInfo.findOne({ username: tdt_id.trim() });
+      if (!existedLogin) {
+        try {
+          const hashedPassword = await bcrypt.hash(tdt_id.trim(), 10);
+          const loginInfo = new LoginInfo({
+            user_id: savedUser._id,
+            username: tdt_id.trim(),
+            password: hashedPassword
+          });
+          await loginInfo.save();
+        } catch (e) {
+          console.error('[UserService LỖI] [LỖI tạo loginInfo]', tdt_id, e.message);
+        }
+      } else {
+        console.log(`[SKIP] loginInfo đã tồn tại: ${tdt_id}`);
+      }
+    }
+
+    inserted.push(savedUser);
   }
 
   res.status(200).json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
 }
 
-exports.getUserByTdtId = async (req, res) => {
-  try {
-    const user = await User.findOne({ tdt_id: req.params.tdt_id });
-
-    if (!user) {
-      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-    }
-
-    res.status(200).json(user);
-  } catch (err) {
-    console.error('[ERROR] Lấy user theo tdt_id:', err.message);
-    res.status(500).json({ message: 'Lỗi server khi lấy người dùng' });
-  }
-};
