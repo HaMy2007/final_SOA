@@ -9,13 +9,15 @@ export const MockUsers = [
     password: "admin123",
     name: "Admin",
     role: "admin",
+    email: "admin@gmail.com",
   },
   {
     id: "2",
-    username: "student",
+    username: "52200131",
     password: "student123",
     name: "Võ Thị Thanh Ngân",
     role: "student",
+    email: "52200131@student.tdtu.edu.vn",
   },
   {
     id: "3",
@@ -23,6 +25,7 @@ export const MockUsers = [
     password: "advisor123",
     name: "Cố vấn A",
     role: "advisor",
+    email: "advisor@gmail.com",
   },
 ];
 
@@ -58,6 +61,6 @@ export const MockAdvisors: Record<string, AdvisorType> = {
     role: "advisor",
     phoneNumber: "0909090909",
     department: "CNTT",
-    email: "advisor@example.com",
+    email: "advisor@gmail.com",
   },
 };

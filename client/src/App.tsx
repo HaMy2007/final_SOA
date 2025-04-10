@@ -11,12 +11,17 @@ import PersonalScore from "./pages/student/PersonalScore";
 import UserManagement from "./pages/admin/UserManagement";
 import StudentInfor from "./pages/advisor/StudentInfor";
 import Unauthorized from "./pages/Unauthorized";
+import ChangePassword from "./pages/ChangePassword";
+import ResetPassword from "./pages/ResetPassword";
+import NewPassword from "./components/NewPassword";
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/changePassword" element={<ChangePassword />} />
+        <Route path="/resetPassword" element={<ResetPassword />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -68,6 +73,7 @@ const App = () => {
           <Route path="*" element={<NoPage />} />
         </Route>
 
+        <Route path="/new-password/:userId" element={<NewPassword />} />
         <Route path="*" element={<NoPage />} />
       </Routes>
     </BrowserRouter>

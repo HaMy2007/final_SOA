@@ -31,13 +31,17 @@ const Login = () => {
 
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("tdt_id", user.id); // dùng để lấy dữ liệu chi tiết
-      localStorage.setItem("role", user.role); // để phân quyền
-      localStorage.setItem("name", user.name); // để hiển thị tên trong UI
+      // localStorage.setItem("tdt_id", user.id); // dùng để lấy dữ liệu chi tiết
+      // localStorage.setItem("role", user.role); // để phân quyền
+      // localStorage.setItem("name", user.name); // để hiển thị tên trong UI
       navigate(`/${user.role}/`);
     } else {
       setError("Tên đăng nhập hoặc mật khẩu không đúng!");
     }
+  };
+
+  const navigateToResetPasswordPage = () => {
+    navigate(`/resetPassword`);
   };
 
   return (
@@ -94,11 +98,15 @@ const Login = () => {
 
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            <div className="flex justify-between w-full flex-col gap-4 mb-4">
+            <button
+              type="button"
+              onClick={navigateToResetPasswordPage}
+              className="flex justify-between items-start flex-col gap-4 mb-4"
+            >
               <span className="text-blue-950 cursor-pointer">
                 Quên mật khẩu?
               </span>
-            </div>
+            </button>
 
             <button
               type="submit"

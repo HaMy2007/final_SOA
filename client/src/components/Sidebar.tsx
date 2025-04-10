@@ -1,8 +1,8 @@
-// src/components/Sidebar.tsx
 import { useNavigate } from "react-router-dom";
 import { menuItems } from "../config/menuConfig";
 import { CiLogout } from "react-icons/ci";
 import Header from "./Header";
+import { MdChangeCircle } from "react-icons/md";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/login");
+  };
+
+  const navigateToChangePasswordPage = () => {
+    navigate(`/changePassword`);
   };
 
   return (
@@ -38,6 +42,15 @@ const Sidebar = () => {
           );
         })}
       </div>
+
+      <button
+        type="button"
+        onClick={navigateToChangePasswordPage}
+        className="flex items-center gap-2 text-white p-3 hover:bg-blue-900 rounded-md mt-auto"
+      >
+        <MdChangeCircle />
+        <span>Đổi mật khẩu</span>
+      </button>
 
       <button
         onClick={handleLogout}

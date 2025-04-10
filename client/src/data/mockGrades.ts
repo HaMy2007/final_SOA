@@ -1,5 +1,3 @@
-// Dữ liệu điểm mock
-
 import { Grade } from "../types/grade";
 
 export const mockGrades: Grade[] = [
