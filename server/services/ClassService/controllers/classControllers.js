@@ -42,11 +42,19 @@ exports.getClassesByTeacher = async (req, res) => {
             return res.status(400).json({ message: 'ID giáo viên không hợp lệ' });
         }
 
-        const classes = await Class.find({ class_teacher: teacherId });
+        const classDoc = await Class.findOne({ class_teacher: teacherId });
+        if (!classDoc) {
+          return res.status(404).json({ message: 'Không tìm thấy lớp của cố vấn' });
+        }
+
         res.status(200).json({
-            teacher_id: teacherId,
-            total: classes.length,
-            classes: classes
+            class: {
+              class_id: classDoc.class_id,
+              class_name: classDoc.class_name,
+              // teacher_id: teacherId,
+              // total: classes.length,
+              // classes: classes,
+            },
         });
     } catch (error) {
         console.error('Lỗi khi lấy danh sách lớp của giáo viên:', error.message);
@@ -54,16 +62,34 @@ exports.getClassesByTeacher = async (req, res) => {
     }
 };
 
+exports.getClassByStudentId = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const foundClass = await Class.findOne({ class_member: userId });
+    if (!foundClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học của sinh viên này" });
+    }
+
+    res.status(200).json({ class: {
+      class_id: foundClass.class_id,
+      class_name: foundClass.class_name
+    }});
+  } catch (err) {
+    console.error("Lỗi tìm lớp theo sinh viên:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
 exports.getAdvisorOfStudent = async (req, res) => {
     try {
       const studentId = req.params.id;
   
-      // Kiểm tra ID
       if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res.status(400).json({ message: 'ID sinh viên không hợp lệ' });
       }
   
-      // 1. Tìm lớp chứa sinh viên
       const classDoc = await Class.findOne({ class_member: studentId });
   
       if (!classDoc) {
@@ -72,17 +98,22 @@ exports.getAdvisorOfStudent = async (req, res) => {
   
       const advisorId = classDoc.class_teacher;
   
-      // 2. Gọi sang UserService để lấy thông tin giáo viên
       const advisorResponse = await axios.get(`http://localhost:4003/api/users/${advisorId}`);
       const advisor = advisorResponse.data;
   
-      // 3. Trả kết quả
       res.status(200).json({
-        advisor_id: advisor._id,
-        name: advisor.name,
-        email: advisor.email,
-        phone_number: advisor.phone_number,
-        address: advisor.address
+        class: {
+          id: classDoc.class_id,
+          name: classDoc.class_name,
+        },
+        advisor: {
+          id: advisor._id,
+          name: advisor.name,
+          email: advisor.email,
+          role: Array.isArray(advisor.role) ? advisor.role[0] : advisor.role,
+          phone_number: advisor.phone_number,
+          address: advisor.address,
+        },
       });
   
     } catch (error) {

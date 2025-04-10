@@ -11,7 +11,7 @@ const runService = (name, command) => {
 runService("API Gateway", "cd api-gateway && npm start dev");
 
 setTimeout(() => {
-    const services = ["ClassService", "EducationService", "ScoreService", "UserService"];
+    const services = ["ClassService", "EducationService", "ScoreService", "UserService", "ForumService"];
     services.forEach(service => {
         runService(service, `cd services/${service} && npm start dev`);
     });

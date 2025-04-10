@@ -1,51 +1,73 @@
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
 import { GrScorecard } from "react-icons/gr";
 import { MdForum } from "react-icons/md";
 import { Link, useNavigate } from "react-router-dom";
 
-import { StudentType } from "../types/student";
-import { AdvisorType } from "../types/advisor";
-import { AdminType } from "../types/admin";
-import { MockAdmins, MockAdvisors, MockStudents } from "../data/MockUsers";
 
-type Props = {};
-
-const Home = (props: Props) => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const { id, role } = user;
+const Home = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const token = localStorage.getItem("token");
+  const role = user.role;
+  const tdt_id = user.tdt_id;
 
-  let userDetail: StudentType | AdvisorType | AdminType | null = null;
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [advisor, setAdvisor] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [studentClass, setStudentClass] = useState<any>(null);
 
-  if (role === "student") {
-    userDetail = MockStudents[id];
-  } else if (role === "advisor") {
-    userDetail = MockAdvisors[id];
-  } else if (role === "admin") {
-    userDetail = MockAdmins[id];
-  }
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUserDetail(res.data);
+        const studentId = res.data._id;
+        localStorage.setItem("user", JSON.stringify(res.data));
+        console.log("Student ID:", studentId);
 
-  if (!userDetail) return <div>Không tìm thấy thông tin người dùng</div>;
+        if (res.data.role === "student") {
+          const advRes = await axios.get(`http://localhost:4000/api/students/${studentId}/advisor`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setAdvisor(advRes.data.advisor);
+          setStudentClass(advRes.data.class);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy thông tin người dùng:", err);
+        navigate("/unauthorized");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [tdt_id, token, navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.clear();
     navigate("/login");
   };
+
+  if (loading) return <div>Đang tải dữ liệu...</div>;
+  if (!userDetail) return <div>Không tìm thấy thông tin người dùng</div>;
 
   // --------------------------------------
   // STUDENT VIEW
   // --------------------------------------
   if (role === "student") {
-    const student = userDetail as StudentType;
-    const advisor = MockAdvisors[student.advisorId];
-
     return (
       <div className="w-full h-full flex flex-col gap-20 p-4 overflow-y-auto">
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Chào mừng đến với ứng dụng quản lý sinh viên - cố vấn học tập!
+              Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên - cố vấn học tập!
             </h1>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-9 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
@@ -53,15 +75,15 @@ const Home = (props: Props) => {
                   <h2 className="text-xl font-bold">Thông tin cá nhân</h2>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Họ và tên</p>
-                    <p className="text-xl">{student.name}</p>
+                    <p className="text-xl">{userDetail.name}</p>
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Vai trò</p>
-                    <p className="text-xl">{student.role}</p>
+                    <p className="text-xl">{userDetail.role}</p>
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Lớp học</p>
-                    <p className="text-xl">{student.class}</p>
+                    <p className="text-xl">{studentClass?.id} - {studentClass?.name}</p>
                   </div>
                 </div>
               </div>
@@ -101,11 +123,11 @@ const Home = (props: Props) => {
                     </div>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Vai trò</p>
-                      <p className="text-xl">{advisor.role}</p>
+                      <p className="text-xl">{advisor.role === 'advisor' ? 'Cố vấn học tập' : 'Không xác định'}</p>
                     </div>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Số điện thoại</p>
-                      <p className="text-xl">{advisor.phoneNumber}</p>
+                      <p className="text-xl">{advisor.phone_number}</p>
                     </div>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Email</p>
@@ -147,7 +169,7 @@ const Home = (props: Props) => {
   if (role === "admin") {
     return (
       <div className="p-4 text-xl text-blue-950">
-        Xin chào <strong>{user.name}</strong>! Đây là trang dành cho{" "}
+        Xin chào <strong>{userDetail.name}</strong>! Đây là trang dành cho{" "}
         <strong>Quản trị viên</strong>.
       </div>
     );
@@ -159,7 +181,7 @@ const Home = (props: Props) => {
   if (role === "advisor") {
     return (
       <div className="p-4 text-xl text-green-900">
-        Xin chào <strong>{user.name}</strong>! Đây là giao diện dành cho{" "}
+        Xin chào <strong>{userDetail.name}</strong>! Đây là giao diện dành cho{" "}
         <strong>Cố vấn học tập</strong>.
       </div>
     );

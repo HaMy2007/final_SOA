@@ -31,7 +31,6 @@ exports.updateUserProfile = async (req, res) => {
         return res.status(400).json({ message: 'ID người dùng không hợp lệ' });
       }
   
-      // Chỉ cho phép update các trường này:
       const allowedFields = ['phone_number', 'parent_number', 'address'];
       const updateData = {};
   
@@ -196,13 +195,18 @@ async function insertUsers(users, res) {
       continue;
     }
 
-    const trimmedRole = (role || 'student').trim().toLowerCase();
+    let trimmedRole = 'student';
+    if (Array.isArray(role)) {
+      trimmedRole = role[0]?.trim().toLowerCase();
+    } else if (typeof role === 'string') {
+      trimmedRole = role.trim().toLowerCase();
+    }
 
     const newUser = new User({
       email: email.trim(),
       address: address?.trim() || "",
       name: name.trim(),
-      role: [trimmedRole],
+      role: trimmedRole,
       tdt_id: tdt_id.trim(),
       gender: gender.trim(),
       phone_number: phone_number.trim(),

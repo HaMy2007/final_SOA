@@ -1,32 +1,43 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
-import { StudentType } from "../types/student";
-import { AdvisorType } from "../types/advisor";
-import { AdminType } from "../types/admin";
-import { MockStudents, MockAdvisors, MockAdmins } from "../data/MockUsers";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-type Props = {};
 
-const Profile = (props: Props) => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const { id, role } = user;
+const Profile = () => {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const tdt_id = user.tdt_id;
+  const token = localStorage.getItem("token");
+  const role = Array.isArray(user.role) ? user.role[0] : user.role;
 
-  let userDetail: StudentType | AdvisorType | AdminType | null = null;
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (role === "student") {
-    userDetail = MockStudents[id];
-  } else if (role === "advisor") {
-    userDetail = MockAdvisors[id];
-  } else if (role === "admin") {
-    userDetail = MockAdmins[id];
-  }
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUserDetail(res.data);
+      } catch (error) {
+        console.error("Lỗi lấy thông tin người dùng:", error);
+        navigate("/unauthorized");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchUser();
+  }, [tdt_id, token, navigate]);
+
+  if (loading) return <div>Đang tải dữ liệu...</div>;
   if (!userDetail) return <div>Không tìm thấy thông tin người dùng</div>;
 
   // --- Sinh viên ---
   if (role === "student") {
-    const student = userDetail as StudentType;
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4 flex justify-center items-start">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
@@ -40,33 +51,35 @@ const Profile = (props: Props) => {
             </div>
             <div>
               <p className="text-sm text-gray-500">Họ và tên</p>
-              <p className="font-medium">{student.name}</p>
+              <p className="font-medium">{userDetail.name}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">TDTU ID</p>
-              <p className="font-medium">{student.tdt_id}</p>
+              <p className="font-medium">{userDetail.tdt_id}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Ngày sinh</p>
               <p className="font-medium">
-                {new Date(student.dateOfBirth).toLocaleDateString()}
+                {new Date(userDetail.date_of_birth).toLocaleDateString()}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium">{student.email}</p>
+              <p className="font-medium">{userDetail.email}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">SĐT cá nhân</p>
-              <p className="font-medium">{student.phoneNumber}</p>
+              <p className="font-medium">{userDetail.phone_number?.startsWith("0")
+                ? userDetail.phone_number
+                : "0" + userDetail.phone_number}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">SĐT phụ huynh</p>
-              <p className="font-medium">{student.parentPhoneNumber}</p>
+              <p className="font-medium">{userDetail.parent_number ? userDetail.parent_number : 'Chưa có số điện thoại phụ huynh'}</p>
             </div>
             <div className="md:col-span-2">
               <p className="text-sm text-gray-500">Địa chỉ</p>
-              <p className="font-medium">{student.address}</p>
+              <p className="font-medium">{userDetail.address}</p>
             </div>
           </div>
         </div>
@@ -76,7 +89,6 @@ const Profile = (props: Props) => {
 
   // --- Cố vấn ---
   if (role === "advisor") {
-    const advisor = userDetail as AdvisorType;
     return (
       <div className="w-full h-full p-8 bg-gray-100 flex justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-2/3">
@@ -86,17 +98,17 @@ const Profile = (props: Props) => {
               <strong>Vai trò:</strong> Cố vấn học tập
             </div>
             <div>
-              <strong>Họ và tên:</strong> {advisor.name}
+              <strong>Họ và tên:</strong> {userDetail.name}
             </div>
             <div>
-              <strong>Email:</strong> {advisor.email}
+              <strong>Email:</strong> {userDetail.email}
             </div>
             <div>
-              <strong>SĐT:</strong> {advisor.phoneNumber}
+              <strong>SĐT:</strong> {userDetail.phone_number}
             </div>
 
             <div>
-              <strong>Bộ môn:</strong> {advisor.department}
+              <strong>Bộ môn:</strong> {userDetail.department}
             </div>
           </div>
         </div>
@@ -106,7 +118,6 @@ const Profile = (props: Props) => {
 
   // --- Quản trị viên ---
   if (role === "admin") {
-    const admin = userDetail as AdminType;
     return (
       <div className="w-full h-full p-8 bg-gray-100 flex justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md w-2/3">
@@ -118,10 +129,10 @@ const Profile = (props: Props) => {
               <strong>Vai trò:</strong> Quản trị viên
             </div>
             <div>
-              <strong>Họ và tên:</strong> {admin.name}
+              <strong>Họ và tên:</strong> {userDetail.name}
             </div>
             <div>
-              <strong>Email:</strong> {admin.email}
+              <strong>Email:</strong> {userDetail.email}
             </div>
           </div>
         </div>

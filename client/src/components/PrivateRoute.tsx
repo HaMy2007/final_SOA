@@ -1,24 +1,25 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { Role } from "../types/auth";
+import React from "react";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
-  allowedRoles: Role[];
+  allowedRoles: string[];
 }
 
 const PrivateRoute = ({ children, allowedRoles }: PrivateRouteProps) => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = user.role;
   const location = useLocation();
 
-  if (!user || !user.role) {
+  if (!user || !userRole) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return <>{children}</>;
+  return allowedRoles.includes(userRole) ? (
+    children
+  ) : (
+    <Navigate to="/unauthorized" replace />
+  );
 };
 
 export default PrivateRoute;

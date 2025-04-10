@@ -7,7 +7,7 @@ import Header from "./Header";
 const Sidebar = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userRole = user.role;
+  const userRole = Array.isArray(user.role) ? user.role[0] : user.role;
 
   const filteredMenuItems = menuItems.filter((item) =>
     item.allowedRoles.includes(userRole)

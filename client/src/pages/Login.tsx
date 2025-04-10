@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import login from "../assets/login.png";
 import logo from "../assets/logo.png";
-import { MockUsers } from "../data/MockUsers";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axios from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -21,22 +21,27 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    const user = MockUsers.find(
-      (u) =>
-        u.username === formData.username && u.password === formData.password
-    );
+    try {
+      const res = await axios.post("http://localhost:4003/api/auth/login", formData);
+      const { token, user } = res.data;
 
-    if (user) {
+      // Lưu vào localStorage
+      localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("tdt_id", user.id); // dùng để lấy dữ liệu chi tiết
-      localStorage.setItem("role", user.role); // để phân quyền
-      localStorage.setItem("name", user.name); // để hiển thị tên trong UI
-      navigate(`/${user.role}/`);
-    } else {
-      setError("Tên đăng nhập hoặc mật khẩu không đúng!");
+      localStorage.setItem("tdt_id", user.tdt_id);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("name", user.name);
+
+      // Điều hướng tới dashboard tương ứng
+      const userRole = Array.isArray(user.role) ? user.role[0] : user.role;
+      navigate(`/${userRole}/`);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Đã xảy ra lỗi đăng nhập";
+      setError(msg);
     }
   };
 

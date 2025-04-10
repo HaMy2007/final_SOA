@@ -71,71 +71,79 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
 };
 
 exports.getStudentScoresBySemester = async (req, res) => {
-    try {
-      const studentId = req.params.id;
-      const semesterId = req.query.semester_id;
+  try {
+    const studentId = req.params.id;
+    const semesterId = req.query.semester_id;
 
-      if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(semesterId)) {
-        return res.status(400).json({ message: 'ID sinh viên hoặc học kỳ không hợp lệ' });
-      }
-
-      // Lấy scoreboard
-      const scoreboard = await Scoreboard.findOne({ user_id: studentId });
-      if (!scoreboard || !scoreboard.score || scoreboard.score.length === 0) {
-        return res.status(404).json({ message: 'Không tìm thấy bảng điểm cho sinh viên này' });
-      }
-
-      const scores = await Score.find({
-        _id: { $in: scoreboard.score },
-        semester_id: new mongoose.Types.ObjectId(semester_id) 
-      });
-
-      // Gọi API lấy subjects từ EducationService
-      const subjectRes = await axios.get('http://localhost:4001/api/subjects');
-      const subjects = subjectRes.data;
-
-      const subjectMap = {};
-      subjects.forEach(sub => {
-        subjectMap[sub.subject_code] = {
-          name: sub.subject_name,
-          credit: sub.credit
-        };
-      });
-
-      let totalCredits = 0;
-      let totalWeightedScore = 0;
-
-      const result = scores.map(sc => {
-        const subject = subjectMap[sc.subject] || {};
-        const credit = subject.credit || 0;
-        const weighted = sc.score * credit;
-
-        // Tính tổng tín chỉ & tổng điểm quy đổi
-        totalCredits += credit;
-        totalWeightedScore += weighted;
-
-        return {
-          subject_code: sc.subject,
-          subject_name: subject.name || 'Không rõ',
-          credit: credit,
-          score: sc.score
-        };
-      });
-
-      const gpa = totalCredits > 0 ? (totalWeightedScore / totalCredits).toFixed(2) : null;
-
-      res.status(200).json({
-        semester_id: semesterId,
-        total_credits: totalCredits,
-        gpa: gpa,
-        scores: result
-      });
-
-    } catch (error) {
-      console.error('Lỗi khi lấy điểm theo học kỳ:', error.message);
-      res.status(500).json({ message: 'Lỗi server' });
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: 'ID sinh viên không hợp lệ' });
     }
+
+    if (semesterId && !mongoose.Types.ObjectId.isValid(semesterId)) {
+      return res.status(400).json({ message: 'ID học kỳ không hợp lệ' });
+    }
+
+    // Lấy bảng điểm từ Scoreboard
+    const scoreboard = await Scoreboard.findOne({ user_id: studentId });
+    if (!scoreboard || !scoreboard.score || scoreboard.score.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy bảng điểm cho sinh viên này' });
+    }
+
+    // Lọc điểm theo học kỳ nếu có
+    const scoreFilter = { _id: { $in: scoreboard.score } };
+    if (semesterId) {
+      scoreFilter.semester_id = new mongoose.Types.ObjectId(semesterId);
+    }
+
+    const scores = await Score.find(scoreFilter);
+
+    // Lấy danh sách môn học từ EducationService
+    const subjectRes = await axios.get('http://localhost:4001/api/subjects');
+    const subjects = subjectRes.data;
+
+    const subjectMap = {};
+    subjects.forEach(sub => {
+      subjectMap[sub.subject_code] = {
+        name: sub.subject_name,
+        credit: sub.credit
+      };
+    });
+
+    // Tính GPA & tổng kết
+    let totalCredits = 0;
+    let totalWeightedScore = 0;
+
+    const result = scores.map(sc => {
+      const subject = subjectMap[sc.subject] || {};
+      const credit = subject.credit || 0;
+      const weighted = sc.score * credit;
+
+      totalCredits += credit;
+      totalWeightedScore += weighted;
+
+      return {
+        subject_code: sc.subject,
+        subject_name: subject.name || 'Không rõ',
+        credit,
+        score: sc.score
+      };
+    });
+
+    const gpa = totalCredits > 0 ? (totalWeightedScore / totalCredits).toFixed(2) : null;
+
+    res.status(200).json({
+      student_id: studentId,
+      semester_id: semesterId || null,
+      total_credits: totalCredits,
+      gpa,
+      scores: result
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy điểm theo học kỳ:', error.message);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
 };
+
 
 exports.getAccumulatedGPA = async (req, res) => {
   try {
@@ -340,7 +348,7 @@ exports.importStudentScores = async (req, res) => {
           const newScore = new Score({
             score: parseFloat(score),
             subject_id: subject._id,
-            subject: subject.subject_name,
+            subject: subject.subject_code,
             semester_id: semester._id
           });
 
