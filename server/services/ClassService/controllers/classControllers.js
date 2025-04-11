@@ -5,33 +5,71 @@ const fs = require("fs");
 const csv = require("csv-parser");
 
 exports.getClassStudents = async (req, res) => {
-    try {
-        const classId = req.params.id;
-        const classDoc = await Class.findOne({ class_id: classId });
-        if (!classDoc) {
-            return res.status(404).json({ message: `Không tìm thấy lớp với mã ${classId}` });
-        }
+  try {
+    const classId = req.params.id;
 
-        const studentIds = classDoc.class_member;
-
-        if (!studentIds || studentIds.length === 0) {
-            return res.status(200).json({ students: [] });
-        }
-
-        const response = await axios.post('http://localhost:4003/api/users/batch', {
-            ids: studentIds
-        });
-
-        res.status(200).json({
-            class_id: classDoc.class_id,
-            class_name: classDoc.class_name,
-            students: response.data
-        });
-
-    } catch (error) {
-        console.error('Lỗi khi lấy sinh viên lớp:', error.message);
-        res.status(500).json({ message: 'Lỗi server hoặc gọi user service thất bại' });
+    const classDoc = await Class.findOne({ class_id: classId });
+    if (!classDoc) {
+      return res.status(404).json({ message: `Không tìm thấy lớp với mã ${classId}` });
     }
+
+    const studentIds = classDoc.class_member;
+    if (!studentIds || studentIds.length === 0) {
+      return res.status(200).json({
+        class_id: classDoc.class_id,
+        class_name: classDoc.class_name,
+        students: []
+      });
+    }
+
+    // Gọi sang UserService để lấy thông tin các user
+    const response = await axios.post("http://localhost:4003/api/users/batch", {
+      ids: studentIds,
+    });
+
+    res.status(200).json({
+      class_id: classDoc.class_id,
+      class_name: classDoc.class_name,
+      students: response.data, // nên đảm bảo response.data là mảng user
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy sinh viên lớp:", error.message);
+    res.status(500).json({ message: "Lỗi server hoặc gọi user service thất bại" });
+  }
+};
+
+
+exports.getAdvisorByClassId = async (req, res) => {
+  try {
+    const { classId } = req.params;
+
+    const classDoc = await Class.findOne({ class_id: classId });
+    if (!classDoc) {
+      return res.status(404).json({ message: "Không tìm thấy lớp" });
+    }
+
+    const advisorId = classDoc.class_teacher;
+    if (!advisorId) {
+      return res.status(404).json({ message: "Lớp này chưa có cố vấn" });
+    }
+
+    const advisorRes = await axios.get(`http://localhost:4003/api/users/${advisorId}`);
+    const advisor = advisorRes.data;
+
+    res.status(200).json({
+      advisor: {
+        id: advisor._id,
+        name: advisor.name,
+        email: advisor.email,
+        role: advisor.role,
+        phone_number: advisor.phone_number,
+        address: advisor.address,
+      },
+    });
+  } catch (error) {
+    console.error("[ClassService] Lỗi lấy thông tin cố vấn:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
 };
 
 exports.getClassesByTeacher = async (req, res) => {

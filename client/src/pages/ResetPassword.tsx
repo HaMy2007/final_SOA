@@ -3,7 +3,6 @@ import forgotpw from "../assets/forgotpw.jpg";
 import logo from "../assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import emailjs from "@emailjs/browser";
 import { init } from "@emailjs/browser";
 
 init({
@@ -19,24 +18,6 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // const validateStudentEmail = (email: string) => {
-  //   const emailRegex = /^[a-zA-Z0-9._%+-]+@student\.tdtu\.edu\.vn$/;
-  //   return emailRegex.test(email);
-  // };
-
-  const generateTemporaryPassword = () => {
-    const length = 10;
-    const charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let tempPassword = "";
-    for (let i = 0; i < length; i++) {
-      tempPassword += charset.charAt(
-        Math.floor(Math.random() * charset.length)
-      );
-    }
-    return tempPassword;
-  };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,28 +39,6 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate("/");
       }, 3000);
-
-      // const templateParams = {
-      //   email: email.trim(),
-      //   link: `http://localhost:5173/new-password/${user.id}`,
-      // };
-
-      // console.log("Sending email with params:", templateParams);
-
-      // const result = await emailjs.send(
-      //   "service_j43pzyj",
-      //   "template_gabd9fd",
-      //   templateParams,
-      //   "5j21xEi95fEwoKMZ-"
-      // );
-
-      // console.log("Email result:::", result);
-
-      // setMessage(
-      //   "Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư."
-      // );
-
-      
     } catch (error: any) {
       console.error("Lỗi gửi email:", error.response?.data || error.message);
       setError(

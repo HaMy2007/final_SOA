@@ -2,6 +2,7 @@ const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 const Feed = require("../models/Feed");
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 
 // Lấy danh sách bài viết theo class_id
 exports.getPostsByClass = async (req, res) => {
@@ -19,42 +20,6 @@ exports.getPostsByClass = async (req, res) => {
     }
 };
 
-// Tạo bài viết mới
-// exports.createPost = async (req, res) => {
-//     try {
-//       const { author_id, author_name, content } = req.body;
-  
-//       // Gọi ClassService để lấy class_id của user
-//       const classRes = await axios.get(`http://localhost:4000/api/students/${author_id}/class`);
-//       const class_id = classRes.data?.class?.class_id;
-  
-//       if (!class_id) {
-//         return res.status(400).json({ message: "Không tìm thấy lớp học của người dùng" });
-//       }
-  
-//       const newPost = new Post({
-//         author_id,
-//         author_name,
-//         class_id,
-//         content,
-//       });
-  
-//       const savedPost = await newPost.save();
-  
-//       let feed = await Feed.findOne({ class_id });
-//       if (!feed) {
-//         feed = new Feed({ class_id, posts: [savedPost._id] });
-//       } else {
-//         feed.posts.push(savedPost._id);
-//       }
-//       await feed.save();
-  
-//       res.status(201).json(savedPost);
-//     } catch (err) {
-//       console.error("[Forum] Lỗi tạo bài viết:", err.message);
-//       res.status(500).json({ message: "Lỗi server" });
-//     }
-// };
 exports.createPost = async (req, res) => {
     try {
       const { author_id, author_name, content, role } = req.body;
@@ -83,6 +48,34 @@ exports.createPost = async (req, res) => {
         feed.posts.push(savedPost._id);
       }
       await feed.save();
+
+      const studentRes = await axios.get(`http://localhost:4000/api/classes/${class_id}/students`);
+      const students = studentRes.data?.students || [];
+      const emailList = students.map((s) => s.email).filter(Boolean);
+
+      const advisorRes = await axios.get(`http://localhost:4000/api/classes/${class_id}/advisor`);
+      const advisorEmail = advisorRes.data?.advisor?.email;
+      if (advisorEmail) emailList.push(advisorEmail);
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.ADMIN_EMAIL,
+          pass: process.env.ADMIN_EMAIL_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: process.env.ADMIN_EMAIL,
+        to: emailList, 
+        subject: `[Thông báo lớp ${class_id}] ${author_name} vừa đăng bài`,
+        html: `
+          <p><strong>${author_name}</strong> vừa đăng một bài viết mới trong diễn đàn lớp <strong>${class_id}</strong>.</p>
+          <p><em>Nội dung:</em></p>
+          <blockquote>${content}</blockquote>
+          <p>Vào hệ thống để xem chi tiết nhé!</p>
+        `,
+      });
   
       res.status(201).json(savedPost);
     } catch (err) {
@@ -141,4 +134,28 @@ exports.toggleLike = async (req, res) => {
       console.error("[Forum] Lỗi toggle like:", err.message);
       res.status(500).json({ message: "Lỗi server" });
     }
+};
+
+// xóa bài viết
+exports.deletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Không tìm thấy bài viết" });
+
+    await Comment.deleteMany({ post_id: postId });
+
+    await Feed.findOneAndUpdate(
+      { class_id: post.class_id },
+      { $pull: { posts: post._id } }
+    );
+
+    await Post.findByIdAndDelete(postId);
+
+    res.status(200).json({ message: "Xóa bài viết thành công" });
+  } catch (err) {
+    console.error("[Forum] Lỗi xóa bài viết:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
 };
