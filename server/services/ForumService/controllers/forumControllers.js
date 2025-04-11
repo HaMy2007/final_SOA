@@ -4,7 +4,6 @@ const Feed = require("../models/Feed");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
 
-// Lấy danh sách bài viết theo class_id
 exports.getPostsByClass = async (req, res) => {
     try {
       const { classId } = req.params;
@@ -85,7 +84,6 @@ exports.createPost = async (req, res) => {
   };
   
 
-// Bình luận vào bài viết
 exports.addComment = async (req, res) => {
     try {
       const { postId } = req.params;
@@ -111,7 +109,6 @@ exports.addComment = async (req, res) => {
     }
 };
 
-// Like / Unlike bài viết
 exports.toggleLike = async (req, res) => {
     try {
       const { postId } = req.params;
@@ -136,7 +133,6 @@ exports.toggleLike = async (req, res) => {
     }
 };
 
-// xóa bài viết
 exports.deletePost = async (req, res) => {
   try {
     const { postId } = req.params;

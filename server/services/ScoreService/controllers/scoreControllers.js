@@ -7,68 +7,71 @@ const csv = require('csv-parser');
 const xlsx = require('xlsx');
 
 exports.getStudentScoresGroupedBySemester = async (req, res) => {
-    try {
-      const studentId = req.params.id;
-  
-      // Kiểm tra ObjectId hợp lệ
-      if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ message: 'ID sinh viên không hợp lệ' });
-      }
-  
-      // Lấy scoreboard của sinh viên
-      const scoreboard = await Scoreboard.findOne({ user_id: studentId });
-      if (!scoreboard || !scoreboard.score || scoreboard.score.length === 0) {
-        return res.status(404).json({ message: 'Không tìm thấy bảng điểm cho sinh viên này' });
-      }
-  
-      // Lấy thông tin điểm của các môn từ collection scores
-      const scores = await Score.find({ _id: { $in: scoreboard.score } });
-  
-      // Gọi dữ liệu môn học và học kỳ từ EducationService
-      const [subjectRes, semesterRes] = await Promise.all([
-        axios.get('http://localhost:4001/api/subjects'),
-        axios.get('http://localhost:4001/api/semesters')
-      ]);
-  
-      const subjects = subjectRes.data;
-      const semesters = semesterRes.data;
-  
-      const subjectMap = {};
-      subjects.forEach(sub => {
-        subjectMap[sub.subject_code] = {
-          name: sub.subject_name,
-          credit: sub.credit
-        };
-      });
-  
-      const semesterMap = {};
-      semesters.forEach(sem => {
-        semesterMap[sem._id] = sem.semester_name;
-      });
-  
-      const result = {};
-  
-      scores.forEach(sc => {
-        const semesterName = semesterMap[sc.semester_id] || 'Không xác định';
-        const subjectInfo = subjectMap[sc.subject] || {};
-  
-        if (!result[semesterName]) result[semesterName] = [];
-  
-        result[semesterName].push({
-          subject_code: sc.subject,
-          subject_name: subjectInfo.name || 'Không rõ',
-          credit: subjectInfo.credit || null,
-          score: sc.score
-        });
-      });
-  
-      res.status(200).json(result);
-  
-    } catch (error) {
-      console.error('Lỗi khi lấy điểm sinh viên:', error.message);
-      res.status(500).json({ message: 'Lỗi server hoặc kết nối EducationService thất bại' });
+  try {
+    const studentId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: 'ID sinh viên không hợp lệ' });
     }
+
+    const scoreboard = await Scoreboard.findOne({ user_id: studentId });
+    if (!scoreboard || !scoreboard.score.length) {
+      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+    }
+
+    const scores = await Score.find({ _id: { $in: scoreboard.score } });
+
+    const [subjectRes, semesterRes] = await Promise.all([
+      axios.get('http://localhost:4001/api/subjects'),
+      axios.get('http://localhost:4001/api/semesters')
+    ]);
+
+    const subjects = subjectRes.data;
+    const semesters = semesterRes.data;
+
+    const subjectMap = {};
+    subjects.forEach(sub => {
+      subjectMap[sub.subject_code] = {
+        name: sub.subject_name,
+        credit: sub.credit
+      };
+    });
+
+    const semesterMap = {};
+    semesters.forEach(sem => {
+      semesterMap[sem._id] = { name: sem.semester_name, _id: sem._id };
+    });
+
+    const result = {};
+
+    scores.forEach(sc => {
+      const semester = semesterMap[sc.semester_id];
+      if (!semester) return;
+
+      if (!result[semester._id]) {
+        result[semester._id] = {
+          name: semester.name,
+          scores: []
+        };
+      }
+
+      const subject = subjectMap[sc.subject] || {};
+      result[semester._id].scores.push({
+        subject_code: sc.subject,
+        subject_name: subject.name || 'Không rõ',
+        credit: subject.credit || 0,
+        score: sc.score
+      });
+    });
+
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Lỗi khi lấy điểm sinh viên:', error.message);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
 };
+
 
 exports.getStudentScoresBySemester = async (req, res) => {
   try {

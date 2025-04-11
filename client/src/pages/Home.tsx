@@ -67,7 +67,7 @@ const Home = () => {
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên - cố vấn học tập!
+              Chào mừng <strong>{userDetail.name}</strong> đến với ứng dụng quản lý sinh viên - cố vấn học tập!
             </h1>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-9 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
