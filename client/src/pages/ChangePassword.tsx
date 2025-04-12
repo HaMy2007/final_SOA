@@ -98,7 +98,7 @@ const ChangePassword = () => {
     <div className="w-full h-screen flex items-center justify-center bg-blue-950">
       <div className="w-4/5 h-4/5 bg-white rounded-md shadow-2xl shadow-blue flex">
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <h1 className="text-blue-950 font-bold text-5xl">Quên mật khẩu</h1>
+          <h1 className="text-blue-950 font-bold text-5xl">Đổi mật khẩu</h1>
           <h2 className="text-blue-950">
             {step === "verifyOld"
               ? "Nhập mật khẩu cũ để xác thực"

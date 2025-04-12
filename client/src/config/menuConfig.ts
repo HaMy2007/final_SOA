@@ -1,12 +1,13 @@
 import { GrScorecard } from "react-icons/gr";
-import { MdForum } from "react-icons/md";
+import { MdForum, MdOutlineScore } from "react-icons/md";
 import { FaHome } from "react-icons/fa";
-import { MdOutlineManageAccounts } from "react-icons/md";
-import { FaRegListAlt } from "react-icons/fa";
 import { ImProfile } from "react-icons/im";
+import { MdOutlineDashboardCustomize } from "react-icons/md";
 
 import { Role } from "../types/auth";
 import React from "react";
+import { IoMdInformationCircle } from "react-icons/io";
+import { SiInformatica } from "react-icons/si";
 
 interface MenuItem {
   path: string;
@@ -35,6 +36,18 @@ export const menuItems: MenuItem[] = [
     allowedRoles: ["admin", "student", "advisor"],
   },
   {
+    path: "databaseManagement",
+    label: "Quản lý CSDL",
+    icon: GrScorecard,
+    allowedRoles: ["admin", "advisor"],
+  },
+  {
+    path: "studentScore",
+    label: "Bảng điểm sinh viên",
+    icon: MdOutlineScore,
+    allowedRoles: ["advisor", "admin"],
+  },
+  {
     path: "personalScore",
     label: "Điểm cá nhân",
     icon: GrScorecard,
@@ -42,14 +55,20 @@ export const menuItems: MenuItem[] = [
   },
   {
     path: "students",
-    label: "Danh sách sinh viên",
-    icon: FaRegListAlt,
-    allowedRoles: ["advisor"],
+    label: "Thông tin sinh viên",
+    icon: IoMdInformationCircle,
+    allowedRoles: ["advisor", "admin"],
   },
   {
-    path: "users",
-    label: "Quản lý người dùng",
-    icon: MdOutlineManageAccounts,
+    path: "dashboard",
+    label: "Dashboard",
+    icon: MdOutlineDashboardCustomize,
+    allowedRoles: ["advisor", "admin"],
+  },
+  {
+    path: "advisorInfo",
+    label: "Thông tin cố vấn",
+    icon: SiInformatica,
     allowedRoles: ["admin"],
   },
 ];
