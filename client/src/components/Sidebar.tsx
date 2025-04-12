@@ -30,6 +30,7 @@ const Sidebar = () => {
         {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           const fullPath = `/${userRole}/${item.path}`;
+
           return (
             <button
               key={item.path}
