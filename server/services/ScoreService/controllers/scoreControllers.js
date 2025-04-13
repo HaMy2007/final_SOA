@@ -322,15 +322,16 @@ exports.filterStudentsByGpaWithName = async (req, res) => {
 exports.importStudentScores = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'Vui lòng chọn file CSV' });
 
+  const teacher_id = req.user.id;
   const filePath = req.file.path;
   const records = [];
+  const inserted = [];
+  const skippedStudents = [];
 
   fs.createReadStream(filePath)
     .pipe(csv())
     .on('data', row => records.push(row))
     .on('end', async () => {
-      const inserted = [];
-
       for (const row of records) {
         try {
           const { tdt_id, subject_code, score, semester_code } = row;
@@ -342,6 +343,18 @@ exports.importStudentScores = async (req, res) => {
           // Lấy user_id từ UserService
           const userRes = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`);
           const user = userRes.data;
+
+          const classRes = await axios.get(`http://localhost:4000/api/students/${user._id}/advisor`);
+          const classInfo = classRes.data;
+
+          if (!classInfo || classInfo.advisor?._id.toString() !== teacher_id.toString()) {
+            console.warn(`[SKIP] Sinh viên ${tdt_id} không thuộc lớp của cố vấn`);
+            skippedStudents.push({
+              tdt_id,
+              reason: "Không thuộc lớp cố vấn đang đăng nhập"
+            });
+            continue;
+          }
 
           // Lấy semester_id từ SemesterService
           const semesterRes = await axios.get(`http://localhost:4001/api/semesters/code/${semester_code}`);
@@ -373,9 +386,21 @@ exports.importStudentScores = async (req, res) => {
           inserted.push(savedScore);
         } catch (err) {
           console.error('[IMPORT ERROR]', err.message);
+          skippedStudents.push(row.tdt_id || "Không xác định");
         }
       }
 
-      res.status(200).json({ message: `Đã import ${inserted.length} điểm`, inserted });
+      if (inserted.length === 0) {
+        return res.status(400).json({
+          message: "Tải lên thất bại: Tất cả sinh viên đều không thuộc lớp của cố vấn.",
+          skipped: skippedStudents,
+        });
+      } else {
+        return res.status(200).json({
+          message: `Đã import ${inserted.length} điểm.`,
+          insertedCount: inserted.length,
+          skipped: skippedStudents,
+        });
+      }
     });
 };

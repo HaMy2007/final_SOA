@@ -2,13 +2,12 @@ import { IoMdAdd } from "react-icons/io";
 import AdvisorList from "../../components/AdvisorList";
 import { useAdvisorInfo } from "../../context/AdvisorInfoContext";
 import { useState } from "react";
-import { CiImport } from "react-icons/ci";
+import axios from "axios";
 
-type Props = {};
-
-const AdvisorInfor = (props: Props) => {
+const AdvisorInfor = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { advisors, handleAdd } = useAdvisorInfo();
+  const { handleAdd } = useAdvisorInfo();
+  const [advisors, setAdvisors] = useState<any[]>([]);
   const [newAdvisor, setNewAdvisor] = useState({
     name: "",
     tdt_id: "",
@@ -21,6 +20,35 @@ const AdvisorInfor = (props: Props) => {
     class: "",
   });
   const [isAdding, setIsAdding] = useState(false);
+
+  const fetchAdvisors = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:4003/api/users/advisors", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const advisorList = res.data;
+      const updatedAdvisors = await Promise.all(
+        advisorList.map(async (advisor: any) => {
+          try {
+            const classRes = await axios.get(
+              `http://localhost:4000/api/teachers/${advisor._id}/class`
+            );
+            return {
+              ...advisor,
+              class_name: classRes.data.class.class_name,
+              class_id: classRes.data.class.class_id,
+            };
+          } catch {
+            return { ...advisor, class_name: "Chưa có lớp", class_id: "" };
+          }
+        })
+      );
+      setAdvisors(updatedAdvisors);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách cố vấn:", err);
+    }
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -88,10 +116,10 @@ const AdvisorInfor = (props: Props) => {
               Thêm cố vấn
             </button>
 
-            <button className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl">
+            {/* <button className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl">
               <CiImport className="text-white font-bold" />
               Import dscv
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -186,7 +214,7 @@ const AdvisorInfor = (props: Props) => {
           </div>
         )}
 
-        <AdvisorList advisors={filteredAdvisors} />
+        <AdvisorList />
       </div>
     </div>
   );

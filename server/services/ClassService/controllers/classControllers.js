@@ -89,9 +89,7 @@ exports.getClassesByTeacher = async (req, res) => {
             class: {
               class_id: classDoc.class_id,
               class_name: classDoc.class_name,
-              // teacher_id: teacherId,
-              // total: classes.length,
-              // classes: classes,
+              students: classDoc.class_member
             },
         });
     } catch (error) {
@@ -248,6 +246,23 @@ exports.importStudentsToClass = async (req, res) => {
         if (!Array.isArray(userIds) || userIds.length === 0)
           return res.status(400).json({ message: "Không tìm thấy sinh viên nào từ danh sách email" });
 
+        const targetClass = await Class.findOne({ class_id: classId });
+        if (!targetClass) {
+          return res.status(404).json({ message: "Không tìm thấy lớp học" });
+        }
+
+        const existingIds = new Set((targetClass.class_member || []).map(id => id.toString()));
+        const alreadyInClass = [];
+        const toAdd = [];
+
+        userIds.forEach((id, i) => {
+          if (existingIds.has(id)) {
+            alreadyInClass.push(emails[i]);
+          } else {
+            toAdd.push(id);
+          }
+        });
+
         const updatedClass = await Class.findOneAndUpdate(
           { class_id: classId }, // tìm theo class_id thay vì _id
           { $addToSet: { class_member: { $each: userIds } } },
@@ -256,11 +271,89 @@ exports.importStudentsToClass = async (req, res) => {
 
         res.status(200).json({
           message: `Đã thêm ${userIds.length} sinh viên vào lớp`,
+          addedCount: toAdd.length,
+          alreadyInClass,
           updatedClass
         });
       });
   } catch (error) {
     console.error("[Import Students ERROR]", error.message);
     res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.removeStudentFromClass = async (req, res) => {
+  try {
+    const { classId, userId } = req.params;
+
+    const updatedClass = await Class.findOneAndUpdate(
+      { class_id: classId }, 
+      { $pull: { class_member: userId } }, // phải là class_member
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ message: 'Không tìm thấy lớp học' });
+    }
+
+    res.status(200).json({ message: 'Đã xoá sinh viên khỏi lớp', class: updatedClass });
+  } catch (error) {
+    console.error('Lỗi khi xoá sinh viên khỏi lớp:', error.message);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+exports.addStudentToClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { email } = req.body;
+
+    // Gọi sang UserService để lấy userId từ email
+    const userServiceURL = "http://localhost:4003/api/users/get-ids-by-emails";
+    const userResponse = await axios.post(userServiceURL, {
+      emails: [email]
+    });
+
+    const userIds = userResponse.data.userIds;
+    if (userIds.length === 0) {
+      return res.status(404).json({ message: "Email không tồn tại trong hệ thống" });
+    }
+
+    const userId = userIds[0];
+
+    const existingClass = await Class.findOne({ class_id: classId });
+
+    if (existingClass.class_member.includes(userId)) {
+      return res.status(409).json({ message: "Sinh viên đã tồn tại trong lớp" });
+    }
+    
+    // Thêm userId vào class_member nếu chưa có
+    const updatedClass = await Class.findOneAndUpdate(
+      { class_id: classId },
+      { $addToSet: { class_member: userId } },
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
+    res.status(200).json({
+      message: "Đã thêm sinh viên vào lớp",
+      class: updatedClass
+    });
+  } catch (error) {
+    console.error("[Add Student ERROR]", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getAllClasses = async (req, res) => {
+  try {
+    const classes = await Class.find({}, 'class_id class_name class_member');
+    res.status(200).json(classes);
+  } catch (err) {
+    console.error('Lỗi khi lấy danh sách lớp:', err.message);
+    res.status(500).json({ message: 'Lỗi server' });
   }
 };

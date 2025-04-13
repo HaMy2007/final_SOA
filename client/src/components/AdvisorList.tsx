@@ -1,45 +1,106 @@
 import { CiEdit } from "react-icons/ci";
 import { MdDelete } from "react-icons/md";
-import { useAdvisorInfo } from "../context/AdvisorInfoContext";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import Swal from 'sweetalert2';
 
-type Props = {
-  advisors: any[];
+const AdvisorList = () => {
+  const [advisors, setAdvisors] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingAdvisor, setEditingAdvisor] = useState<any>(null);
+
+  useEffect(() => {
+    fetchAdvisors();
+  }, []);
+
+  const fetchAdvisors = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:4003/api/users/advisors", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const advisorList = res.data;
+      const updatedAdvisors = await Promise.all(
+        advisorList.map(async (advisor: any) => {
+          try {
+            const classRes = await axios.get(
+              `http://localhost:4000/api/teachers/${advisor._id}/class`
+            );
+            return {
+              ...advisor,
+              class_name: classRes.data.class.class_name,
+              class_id: classRes.data.class.class_id,
+            };
+          } catch (err) {
+            console.warn("Không tìm thấy lớp của cố vấn:", advisor.name);
+            return {
+              ...advisor,
+              class_name: "Chưa có lớp",
+              class_id: "",
+            };
+          }
+        })
+      );
+      setAdvisors(updatedAdvisors);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách cố vấn:", err);
+    }
+  };
+
+  const handleDelete = async (_id: string) => {
+  try {
+    const confirm = await Swal.fire({
+      title: 'Bạn có chắc muốn xoá?',
+      text: 'Thao tác này không thể hoàn tác!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Xoá',
+      cancelButtonText: 'Huỷ'
+    });
+
+    if (confirm.isConfirmed) {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:4003/api/users/${_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      await Swal.fire('Đã xoá!', 'Cố vấn đã được xoá thành công.', 'success');
+      fetchAdvisors();
+    }
+  } catch (err) {
+    console.error("Lỗi khi xoá cố vấn:", err);
+    Swal.fire('Lỗi!', 'Đã xảy ra lỗi khi xoá cố vấn.', 'error');
+  }
 };
 
-const AdvisorList = ({ advisors }: Props) => {
-  const {
-    isEditing,
-    handleUpdate,
-    handleEdit,
-    handleDelete,
-    editingAdvisor,
-    setEditingAdvisor,
-    setIsEditing,
-  } = useAdvisorInfo();
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `http://localhost:4003/api/users/${editingAdvisor._id}`,
+        editingAdvisor,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsEditing(false);
+      fetchAdvisors();
+      Swal.fire("✅ Thành công!", "Thông tin đã được cập nhật", "success");
+    } catch (err) {
+      console.error("Lỗi khi cập nhật:", err);
+    }
+  };
 
   return (
     <div className="overflow-x-auto">
-      {isEditing && (
+      {isEditing && editingAdvisor && (
         <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-1/2">
             <h2 className="text-xl font-bold mb-4">
               Chỉnh sửa thông tin cố vấn
             </h2>
             <form onSubmit={handleUpdate} className="space-y-2">
-              {/* <div>
-                <label className="block text-sm font-medium">Họ và tên</label>
-                <input
-                  type="text"
-                  value={editingAdvisor.name}
-                  onChange={(e) =>
-                    setEditingAdvisor({
-                      ...editingAdvisor,
-                      name: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-              </div> */}
               <div>
                 <label className="block text-sm font-medium">Giới tính</label>
                 <input
@@ -58,11 +119,11 @@ const AdvisorList = ({ advisors }: Props) => {
                 <label className="block text-sm font-medium">Lớp</label>
                 <input
                   type="text"
-                  value={editingAdvisor.class}
+                  value={editingAdvisor.class_id}
                   onChange={(e) =>
                     setEditingAdvisor({
                       ...editingAdvisor,
-                      class: e.target.value,
+                      class_id: e.target.value,
                     })
                   }
                   className="w-full p-2 border rounded"
@@ -73,7 +134,9 @@ const AdvisorList = ({ advisors }: Props) => {
                 <input
                   type="date"
                   value={
-                    editingAdvisor.date_of_birth.toISOString().split("T")[0]
+                    editingAdvisor.date_of_birth
+                      ? new Date(editingAdvisor.date_of_birth).toISOString().split("T")[0]
+                      : ""
                   }
                   onChange={(e) =>
                     setEditingAdvisor({
@@ -84,36 +147,6 @@ const AdvisorList = ({ advisors }: Props) => {
                   className="w-full p-2 border rounded"
                 />
               </div>
-              {/* <div>
-                <label className="block text-sm font-medium">Email</label>
-                <input
-                  type="email"
-                  value={editingAdvisor.email}
-                  onChange={(e) =>
-                    setEditingAdvisor({
-                      ...editingAdvisor,
-                      email: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-              </div> */}
-              {/* <div>
-                <label className="block text-sm font-medium">
-                  Mã số cố vấn
-                </label>
-                <input
-                  type="text"
-                  value={editingAdvisor.tdt_id}
-                  onChange={(e) =>
-                    setEditingAdvisor({
-                      ...editingAdvisor,
-                      tdt_id: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-              </div> */}
               <div>
                 <label className="block text-sm font-medium">
                   Số điện thoại
@@ -168,16 +201,12 @@ const AdvisorList = ({ advisors }: Props) => {
         <thead className="bg-gray-200">
           <tr>
             <th className="text-base border border-gray-300 p-2">Họ và tên</th>
-            <th className="text-base border border-gray-300 p-2">
-              Mã số cố vấn
-            </th>
+            <th className="text-base border border-gray-300 p-2">Mã số cố vấn</th>
             <th className="text-base border border-gray-300 p-2">Giới tính</th>
             <th className="text-base border border-gray-300 p-2">Lớp</th>
             <th className="text-base border border-gray-300 p-2">Ngày sinh</th>
             <th className="text-base border border-gray-300 p-2">Email</th>
-            <th className="text-base border border-gray-300 p-2">
-              Số điện thoại
-            </th>
+            <th className="text-base border border-gray-300 p-2">Số điện thoại</th>
             <th className="border text-base border-gray-300 p-2">Địa chỉ</th>
             <th className="border text-base border-gray-300 p-2">Thao tác</th>
           </tr>
@@ -195,7 +224,7 @@ const AdvisorList = ({ advisors }: Props) => {
                 {advisor.gender}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {advisor.class}
+                {advisor.class_id ? advisor.class_id : "Chưa có lớp"}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {advisor.date_of_birth
@@ -213,13 +242,13 @@ const AdvisorList = ({ advisors }: Props) => {
               </td>
               <td className="border text-sm border-gray-300 text-center">
                 <button
-                  onClick={() => handleEdit(advisor)}
+                  onClick={() => { setEditingAdvisor(advisor); setIsEditing(true); }}
                   className="cursor-pointer mr-2 text-xl text-blue-500 hover:text-blue-700"
                 >
                   <CiEdit />
                 </button>
                 <button
-                  onClick={() => handleDelete(advisor.tdt_id)}
+                  onClick={() => handleDelete(advisor._id)}
                   className="cursor-pointer text-red-500 text-xl hover:text-red-700"
                 >
                   <MdDelete />

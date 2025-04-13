@@ -30,7 +30,6 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(400).json({ message: "ID người dùng không hợp lệ" });
     }
 
-    // const allowedFields = ["phone_number", "parent_number", "address"];
     const allowedFields = [
       "name",
       "phone_number",
@@ -84,6 +83,17 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi lấy user" });
   }
 };
+
+exports.getAllAdvisors = async (req, res) => {
+  try {
+    const advisors = await User.find({ role: 'advisor' });
+    res.status(200).json(advisors);
+  } catch (error) {
+    console.error("[GET ALL ADVISORS ERROR]:", error);
+    res.status(500).json({ message: "Lỗi server khi lấy user", error: error.message });
+  }
+};
+
 
 exports.getUserByTdtId = async (req, res) => {
   try {
@@ -272,3 +282,86 @@ async function insertUsers(users, res) {
     .status(200)
     .json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
 }
+
+// userController.js
+exports.deleteAdvisor = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    // Kiểm tra user có tồn tại và là cố vấn không
+    const advisor = await User.findOne({ _id: userId, role: "advisor" });
+    if (!advisor) {
+      return res.status(404).json({ message: "Không tìm thấy cố vấn" });
+    }
+
+    // Tiến hành xoá
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({ message: "Xoá cố vấn thành công" });
+  } catch (error) {
+    console.error("Lỗi khi xoá cố vấn:", error.message);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.addStudentByAdmin = async (req, res) => {
+  try {
+    const {
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      parent_number,
+      address,
+      date_of_birth,
+    } = req.body;
+
+    if (!name || !tdt_id || !gender || !phone_number || !date_of_birth) {
+      return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+    }
+    const email = `${tdt_id}@student.tdtu.edu.vn`;
+    const existingUser = await User.findOne({
+      $or: [{ tdt_id }, { email }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Sinh viên đã tồn tại trong hệ thống" });
+    }
+
+    const newUser = new User({
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      parent_number,
+      address,
+      date_of_birth: new Date(date_of_birth),
+      email,
+      role: "student",
+    });
+
+    const savedUser = await newUser.save();
+
+    const hashedPassword = await bcrypt.hash(tdt_id, 10);
+    const loginInfo = new LoginInfo({
+      user_id: savedUser._id,
+      username: tdt_id,
+      password: hashedPassword,
+    });
+
+    await loginInfo.save();
+
+    res.status(201).json({
+      message: "Thêm sinh viên thành công",
+      student: savedUser,
+    });
+  } catch (error) {
+    console.error("[ADD STUDENT ERROR]:", error.message);
+    res.status(500).json({ message: "Lỗi server khi thêm sinh viên" });
+  }
+};

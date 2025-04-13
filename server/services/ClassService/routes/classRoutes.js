@@ -11,5 +11,8 @@ router.get('/class-size', classController.getClassSizeById);
 router.post('/classes/:classId/import-students', upload.single('file'), classController.importStudentsToClass);
 router.get('/students/:id/class', classController.getClassByStudentId);
 router.get('/classes/:classId/advisor', classController.getAdvisorByClassId);
+router.delete('/classes/:classId/remove-student/:userId', classController.removeStudentFromClass);
+router.post('/classes/:classId/add-student', classController.addStudentToClass);
+router.get("/classes", classController.getAllClasses);
 
 module.exports = router;

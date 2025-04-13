@@ -27,7 +27,7 @@ export const menuItems: MenuItem[] = [
     path: "forum",
     label: "Diễn đàn",
     icon: MdForum,
-    allowedRoles: ["admin", "student", "advisor"],
+    allowedRoles: ["student", "advisor"],
   },
   {
     path: "profile",

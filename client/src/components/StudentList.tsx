@@ -1,25 +1,82 @@
 import { CiEdit } from "react-icons/ci";
 import { MdDelete } from "react-icons/md";
-import { useStudentInfo } from "../context/StudentInfoContext";
+import { useState } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
 
 type Props = {
+  role: string;
   students: any[];
+  onDelete: (tdt_id: string) => void;
+  classId: string;
+  setStudents: React.Dispatch<React.SetStateAction<any[]>>;
 };
 
-const StudentList = ({ students }: Props) => {
-  const {
-    isEditing,
-    handleUpdate,
-    handleEdit,
-    handleDelete,
-    editingStudent,
-    setEditingStudent,
-    setIsEditing,
-  } = useStudentInfo();
+const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+
+  const handleEdit = (student: any) => {
+    setEditingStudent(student);
+    setIsEditing(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const userId = editingStudent._id; 
+  
+      const updatePayload = {
+        name: editingStudent.name,
+        phone_number: editingStudent.phoneNumber || editingStudent.phone_number,
+        parent_number: editingStudent.parentPhoneNumber || editingStudent.parent_number,
+        address: editingStudent.address,
+        date_of_birth:
+        editingStudent.dateOfBirth instanceof Date
+          ? editingStudent.dateOfBirth.toISOString()
+          : editingStudent.dateOfBirth || editingStudent.date_of_birth,
+        gender: editingStudent.gender,
+      };
+  
+      const res = await axios.put(
+        `http://localhost:4003/api/users/${userId}`,
+        updatePayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Cập nhật thành công!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+  
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === userId ? { ...s, ...updatePayload } : s
+        )
+      );
+  
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Lỗi khi cập nhật sinh viên:", err.response?.data?.message || err.message);
+      Swal.fire({
+        icon: "error",
+        title: "Cập nhật thất bại!",
+        text: err.response?.data?.message || "Có lỗi xảy ra",
+      });
+    }
+  };
 
   return (
     <div className="overflow-x-auto">
-      {isEditing && (
+      {isEditing && editingStudent && (
         <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-1/2">
             <h2 className="text-xl font-bold mb-4">
@@ -58,56 +115,28 @@ const StudentList = ({ students }: Props) => {
                 <label className="block text-sm font-medium">Ngày sinh</label>
                 <input
                   type="date"
-                  value={editingStudent.dateOfBirth.toISOString().split("T")[0]}
+                  value={editingStudent.date_of_birth
+                    ? new Date(editingStudent.date_of_birth).toISOString().split("T")[0]
+                    : ""}
                   onChange={(e) =>
                     setEditingStudent({
                       ...editingStudent,
-                      dateOfBirth: new Date(e.target.value),
+                      date_of_birth: new Date(e.target.value),
                     })
                   }
                   className="w-full p-2 border rounded"
                 />
               </div>
-
-              {/* <div>
-                <label className="block text-sm font-medium">Email</label>
-                <input
-                  type="email"
-                  value={editingStudent.email}
-                  onChange={(e) =>
-                    setEditingStudent({
-                      ...editingStudent,
-                      email: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-              </div> */}
-              {/* <div>
-                <label className="block text-sm font-medium">
-                  Mã số sinh viên
-                </label>
-                <input
-                  type="text"
-                  value={editingStudent.tdt_id}
-                  onChange={(e) =>
-                    setEditingStudent({
-                      ...editingStudent,
-                      tdt_id: e.target.value,
-                    })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-              </div> */}
               <div>
                 <label className="block text-sm font-medium">Lớp</label>
                 <input
                   type="text"
-                  value={editingStudent.class}
+                  value={editingStudent.class_id || classId}
+                  readOnly
                   onChange={(e) =>
                     setEditingStudent({
                       ...editingStudent,
-                      class: e.target.value,
+                      class_id: e.target.value,
                     })
                   }
                   className="w-full p-2 border rounded"
@@ -119,12 +148,17 @@ const StudentList = ({ students }: Props) => {
                 </label>
                 <input
                   type="text"
-                  value={editingStudent.phoneNumber}
-                  onChange={(e) =>
+                  value={editingStudent.phone_number?.startsWith("0")
+                    ? editingStudent.phone_number
+                    : "0" + editingStudent.phone_number}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const sanitized = value.startsWith("0") ? value.slice(1) : value;
                     setEditingStudent({
                       ...editingStudent,
-                      phoneNumber: e.target.value,
+                      phone_number: sanitized,
                     })
+                  }
                   }
                   className="w-full p-2 border rounded"
                 />
@@ -135,11 +169,11 @@ const StudentList = ({ students }: Props) => {
                 </label>
                 <input
                   type="text"
-                  value={editingStudent.parentPhoneNumber}
+                  value={editingStudent.parent_number ? editingStudent.parent_number : "Chưa có thông tin"}
                   onChange={(e) =>
                     setEditingStudent({
                       ...editingStudent,
-                      parentPhoneNumber: e.target.value,
+                      parent_number: e.target.value,
                     })
                   }
                   className="w-full p-2 border rounded"
@@ -183,25 +217,19 @@ const StudentList = ({ students }: Props) => {
         <thead className="bg-gray-200">
           <tr>
             <th className="text-base border border-gray-300 p-2">Họ và tên</th>
-            <th className="text-base border border-gray-300 p-2">
-              Mã số sinh viên
-            </th>
+            <th className="text-base border border-gray-300 p-2">Mã số sinh viên</th>
             <th className="text-base border border-gray-300 p-2">Giới tính</th>
             <th className="text-base border border-gray-300 p-2">Ngày sinh</th>
             <th className="text-base border border-gray-300 p-2">Email</th>
-            <th className="text-base border border-gray-300 p-2">
-              Số điện thoại
-            </th>
-            <th className="text-base border border-gray-300 p-2">
-              Số điện thoại phụ huynh
-            </th>
+            <th className="text-base border border-gray-300 p-2">Số điện thoại</th>
+            <th className="text-base border border-gray-300 p-2">Số điện thoại phụ huynh</th>
             <th className="border text-base border-gray-300 p-2">Địa chỉ</th>
             <th className="border text-base border-gray-300 p-2">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           {students.map((student) => (
-            <tr key={student.tdt_id} className="hover:bg-gray-100">
+            <tr key={student.tdt_id || student._id} className="hover:bg-gray-100">
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.name}
               </td>
@@ -209,21 +237,23 @@ const StudentList = ({ students }: Props) => {
                 {student.tdt_id}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {student.gender}
+                {student.gender == "female" ? "Nữ" : "Nam"}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {student.dateOfBirth
-                  ? new Date(student.dateOfBirth).toLocaleDateString()
-                  : "Chưa có ngày sinh"}
+                {student.date_of_birth
+                  ? new Date(student.date_of_birth).toLocaleDateString()
+                  : "Chưa có thông tin"}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.email}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {student.phoneNumber}
+                {student.phone_number?.startsWith("0")
+                    ? student.phone_number
+                    : "0" + student.phone_number}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {student.parentPhoneNumber}
+                {student.parent_number ? student.parent_number : "Chưa có thông tin"}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.address}
@@ -235,12 +265,14 @@ const StudentList = ({ students }: Props) => {
                 >
                   <CiEdit />
                 </button>
+                
                 <button
-                  onClick={() => handleDelete(student.tdt_id)}
+                  onClick={() => onDelete(student.tdt_id)}
                   className="cursor-pointer text-red-500 text-xl hover:text-red-700"
                 >
                   <MdDelete />
                 </button>
+                
               </td>
             </tr>
           ))}

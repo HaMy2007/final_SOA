@@ -35,10 +35,12 @@ const Home = () => {
             },
           }
         );
-        setUserDetail(res.data);
         const studentId = res.data._id;
-        localStorage.setItem("user", JSON.stringify(res.data));
         console.log("Student ID:", studentId);
+
+        const fetchedUser = res.data;
+        setUserDetail(fetchedUser);
+        localStorage.setItem("user", JSON.stringify(fetchedUser));
 
         if (res.data.role === "student") {
           const advRes = await axios.get(
@@ -50,6 +52,14 @@ const Home = () => {
           setAdvisor(advRes.data.advisor);
           setStudentClass(advRes.data.class);
         }
+        if (fetchedUser.role === "advisor") {
+          const advisorId = fetchedUser._id;
+          const classRes = await axios.get(`http://localhost:4000/api/teachers/${advisorId}/class`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setStudentClass(classRes.data.class); 
+        }
+
       } catch (err) {
         console.error("Lỗi lấy thông tin người dùng:", err);
         navigate("/unauthorized");
@@ -78,7 +88,7 @@ const Home = () => {
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên -
+              Chào mừng <strong>{userDetail.name}</strong> đến với ứng dụng quản lý sinh viên -
               cố vấn học tập!
             </h1>
             <div className="grid grid-cols-12 gap-4">
@@ -145,7 +155,9 @@ const Home = () => {
                     </div>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Số điện thoại</p>
-                      <p className="text-xl">{advisor.phone_number}</p>
+                      <p className="text-xl">{advisor.phone_number?.startsWith("0")
+                        ? advisor.phone_number
+                        : "0" + advisor.phone_number}</p>
                     </div>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Email</p>
@@ -281,7 +293,7 @@ const Home = () => {
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên -
+              Chào mừng <strong>{userDetail.name}</strong> đến với ứng dụng quản lý sinh viên -
               cố vấn học tập!
             </h1>
             <div className="grid grid-cols-12 gap-4">
@@ -294,11 +306,11 @@ const Home = () => {
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Vai trò</p>
-                    <p className="text-xl">{userDetail.role}</p>
+                    <p className="text-xl">Cố vấn học tập</p>
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Lớp hiện tại</p>
-                    <p className="text-xl">AA</p>
+                    <p className="text-xl">{studentClass?.class_id} - {studentClass?.class_name}</p>
                   </div>
                 </div>
               </div>
