@@ -29,15 +29,30 @@ const StudentScoresList = () => {
           setClassId(classRes.data.class?.class_id || "");
           fetchStudents(classRes.data.class?.students || []);
         } else if (role === 'admin') {
-          const classRes = await axios.get("http://localhost:4000/api/classes", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const [classRes, usersRes] = await Promise.all([
+            axios.get("http://localhost:4000/api/classes", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:4003/api/users", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+        
           setAvailableClasses(classRes.data);
-          const allStudentIds = classRes.data.flatMap((cls: any) => cls.class_member);
-          const allStudentsWithClassInfo = classRes.data.flatMap((cls: any) =>
-            cls.class_member.map((studentId: string) => ({ studentId, class_id: cls.class_id }))
+        
+          // Gắn thêm class_id nếu sinh viên có trong lớp
+          const students = usersRes.data.filter((u: any) => u.role === 'student');
+          const classMapping = classRes.data.flatMap((cls: any) =>
+            cls.class_member.map((studentId: string) => ({
+              studentId,
+              class_id: cls.class_id,
+            }))
           );
-          fetchStudents(allStudentIds, allStudentsWithClassInfo);
+        
+          fetchStudents(
+            students.map((s: any) => s._id),
+            classMapping
+          );
         }
       } catch (err) {
         console.error("Lỗi khi tải dữ liệu:", (err as Error).message);
@@ -61,12 +76,17 @@ const StudentScoresList = () => {
             const res = await axios.get(`http://localhost:4002/api/students/${student._id}/scores`, {
               headers: { Authorization: `Bearer ${token}` },
             });
-            const gpa = res.data.gpa;
+            const { gpa, status } = res.data;
             const classInfo = classMapping.find((m) => m.studentId === student._id);
-            return { ...student, gpa, class_id: student.class_id || classInfo?.class_id || "", academicStatus: getAcademicStatus(gpa) };
+            return {
+              ...student,
+              gpa,
+              status,
+              class_id: student.class_id || classInfo?.class_id || ""
+            };
           } catch {
             const classInfo = classMapping.find((m) => m.studentId === student._id);
-            return { ...student, gpa: "-", class_id: student.class_id || classInfo?.class_id || "", academicStatus: "Chưa có" };
+            return { ...student, gpa: "-", class_id: student.class_id || classInfo?.class_id || "", status: "Chưa có" };
           }
         })
       );
@@ -80,10 +100,37 @@ const StudentScoresList = () => {
     }
   };
 
+  // const fetchStudentsByClassId = async (classId: string) => {
+  //   try {
+  //     setSelectedClassId(classId);
+  //     if (!classId) {
+  //       const classRes = await axios.get("http://localhost:4000/api/classes", {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       const allStudentIds = classRes.data.flatMap((cls: any) => cls.class_member);
+  //       const allStudentsWithClassInfo = classRes.data.flatMap((cls: any) =>
+  //         cls.class_member.map((studentId: string) => ({ studentId, class_id: cls.class_id }))
+  //       );
+  //       fetchStudents(allStudentIds, allStudentsWithClassInfo);
+  //       return;
+  //     }
+
+  //     const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setClassId(classId);
+  //     const studentIds = classRes.data?.students.map((s: any) => s._id);
+  //     fetchStudents(studentIds);
+  //   } catch (err) {
+  //     console.error("Lỗi khi lấy sinh viên lớp:", err);
+  //   }
+  // };
   const fetchStudentsByClassId = async (classId: string) => {
     try {
       setSelectedClassId(classId);
-      if (!classId) {
+  
+      if (classId === "") {
+        // Tất cả sinh viên
         const classRes = await axios.get("http://localhost:4000/api/classes", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -91,39 +138,53 @@ const StudentScoresList = () => {
         const allStudentsWithClassInfo = classRes.data.flatMap((cls: any) =>
           cls.class_member.map((studentId: string) => ({ studentId, class_id: cls.class_id }))
         );
-        fetchStudents(allStudentIds, allStudentsWithClassInfo);
+  
+        const res = await axios.get("http://localhost:4003/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const allStudents = res.data.filter((s: any) => s.role === "student");
+  
+        fetchStudents(allStudents.map((s: any) => s._id), allStudentsWithClassInfo);
         return;
       }
-
+  
+      if (classId === "no_class") {
+        // 👉 Sinh viên chưa có lớp
+        const [classRes, usersRes] = await Promise.all([
+          axios.get("http://localhost:4000/api/classes", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:4003/api/users", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+  
+        const allClassMemberIds = classRes.data.flatMap((cls: any) => cls.class_member);
+        const allStudents = usersRes.data.filter((u: any) => u.role === "student");
+  
+        const noClassStudents = allStudents.filter(
+          (stu: any) => !allClassMemberIds.includes(stu._id)
+        );
+  
+        fetchStudents(noClassStudents.map((s: any) => s._id), []);
+        return;
+      }
+  
+      // Sinh viên thuộc 1 lớp cụ thể
       const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setClassId(classId);
       const studentIds = classRes.data?.students.map((s: any) => s._id);
-      fetchStudents(studentIds);
+      fetchStudents(studentIds, classRes.data?.students.map((s: any) => ({
+        studentId: s._id,
+        class_id: classId
+      })));
     } catch (err) {
       console.error("Lỗi khi lấy sinh viên lớp:", err);
     }
   };
-
-  const getAcademicStatus = (gpa: number): string => {
-    if (gpa >= 9) return "XUẤT SẮC";
-    if (gpa >= 8) return "GIỎI";
-    if (gpa >= 6.5) return "KHÁ";
-    if (gpa >= 5) return "TRUNG BÌNH";
-    return "YẾU";
-  };
-
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "XUẤT SẮC": return "bg-blue-100 text-blue-800";
-      case "GIỎI": return "bg-green-100 text-green-800";
-      case "KHÁ": return "bg-yellow-100 text-yellow-800";
-      case "TRUNG BÌNH": return "bg-orange-100 text-orange-800";
-      case "YẾU": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
+  
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -142,12 +203,23 @@ const StudentScoresList = () => {
         s.name.toLowerCase().includes(term) ||
         s.tdt_id?.toLowerCase().includes(term) ||
         s.class_id?.toLowerCase().includes(term);
-      const matchesStatus = !status || s.academicStatus === status;
+      const matchesStatus = !status || s.status === status;
       return matchesSearch && matchesStatus;
     });
     setFilteredStudents(result);
   };
 
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "XUẤT SẮC": return "bg-blue-100 text-blue-800";
+      case "GIỎI": return "bg-green-100 text-green-800";
+      case "KHÁ": return "bg-yellow-100 text-yellow-800";
+      case "TRUNG BÌNH": return "bg-orange-100 text-orange-800";
+      case "YẾU": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+  
   const handleViewDetails = (studentId: string) => {
     const basePath = role === "admin" ? "/admin" : "/advisor";
     navigate(`${basePath}/studentDetail/${studentId}`);
@@ -173,7 +245,8 @@ const StudentScoresList = () => {
               fetchStudentsByClassId(e.target.value);
             }}
           >
-            <option value="">Tất cả lớp</option>
+            <option value="">Tất cả sinh viên</option>
+            <option value="no_class">Chưa có lớp</option>
             {availableClasses.map((cls) => (
               <option key={cls.class_id} value={cls.class_id}>
                 {cls.class_id} - {cls.class_name}
@@ -225,19 +298,19 @@ const StudentScoresList = () => {
             {filteredStudents.map((student) => (
               <tr key={student._id} className="border-t hover:bg-gray-50">
                 <td className="py-3 px-4">{student.name}</td>
-                <td className="py-3 px-4">{student.class_id || classId}</td>
+                <td className="py-3 px-4">{student.class_id || classId ? student.class_id || classId : "Chưa có lớp"}</td>
                 <td className="py-3 px-4">{student.tdt_id}</td>
                 <td className="py-3 px-4">
-                  {student.academicStatus !== "Chưa có" ? (
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(student.academicStatus)}`}>
-                      {student.academicStatus}
+                  {student.status ? (
+                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusClass(student.status)}`}>
+                      {student.status}
                     </span>
                   ) : (
                     <span className="text-gray-500 text-xs italic">Chưa có GPA</span>
                   )}
                 </td>
                 <td className="py-3 px-4">{new Date(student.date_of_birth).toLocaleDateString("vi-VN")}</td>
-                <td className="py-3 px-4">{student.gpa || "-"}</td>
+                <td className="py-3 px-4">{typeof student.gpa === "number" ? student.gpa.toFixed(2) : "-"}</td>
                 <td className="py-3 px-4 text-center">
                   <button className="text-blue-500 hover:text-blue-700" onClick={() => handleViewDetails(student.tdt_id)}>
                     <FaInfoCircle size={20} />

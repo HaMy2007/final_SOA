@@ -4,48 +4,48 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from 'sweetalert2';
 
-const AdvisorList = () => {
-  const [advisors, setAdvisors] = useState<any[]>([]);
+type Props = {
+  advisors: any[];
+  onRefresh: () => void;
+};
+
+const AdvisorList = ({ advisors, onRefresh  }: Props) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingAdvisor, setEditingAdvisor] = useState<any>(null);
 
-  useEffect(() => {
-    fetchAdvisors();
-  }, []);
-
-  const fetchAdvisors = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:4003/api/users/advisors", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const advisorList = res.data;
-      const updatedAdvisors = await Promise.all(
-        advisorList.map(async (advisor: any) => {
-          try {
-            const classRes = await axios.get(
-              `http://localhost:4000/api/teachers/${advisor._id}/class`
-            );
-            return {
-              ...advisor,
-              class_name: classRes.data.class.class_name,
-              class_id: classRes.data.class.class_id,
-            };
-          } catch (err) {
-            console.warn("Không tìm thấy lớp của cố vấn:", advisor.name);
-            return {
-              ...advisor,
-              class_name: "Chưa có lớp",
-              class_id: "",
-            };
-          }
-        })
-      );
-      setAdvisors(updatedAdvisors);
-    } catch (err) {
-      console.error("Lỗi khi lấy danh sách cố vấn:", err);
-    }
-  };
+  // const fetchAdvisors = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const res = await axios.get("http://localhost:4003/api/users/advisors", {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     const advisorList = res.data;
+  //     const updatedAdvisors = await Promise.all(
+  //       advisorList.map(async (advisor: any) => {
+  //         try {
+  //           const classRes = await axios.get(
+  //             `http://localhost:4000/api/teachers/${advisor._id}/class`
+  //           );
+  //           return {
+  //             ...advisor,
+  //             class_name: classRes.data.class.class_name,
+  //             class_id: classRes.data.class.class_id,
+  //           };
+  //         } catch (err) {
+  //           console.warn("Không tìm thấy lớp của cố vấn:", advisor.name);
+  //           return {
+  //             ...advisor,
+  //             class_name: "Chưa có lớp",
+  //             class_id: "",
+  //           };
+  //         }
+  //       })
+  //     );
+  //     setAdvisors(updatedAdvisors);
+  //   } catch (err) {
+  //     console.error("Lỗi khi lấy danh sách cố vấn:", err);
+  //   }
+  // };
 
   const handleDelete = async (_id: string) => {
   try {
@@ -67,7 +67,7 @@ const AdvisorList = () => {
       });
 
       await Swal.fire('Đã xoá!', 'Cố vấn đã được xoá thành công.', 'success');
-      fetchAdvisors();
+      onRefresh();
     }
   } catch (err) {
     console.error("Lỗi khi xoá cố vấn:", err);
@@ -85,7 +85,7 @@ const AdvisorList = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setIsEditing(false);
-      fetchAdvisors();
+      onRefresh();
       Swal.fire("✅ Thành công!", "Thông tin đã được cập nhật", "success");
     } catch (err) {
       console.error("Lỗi khi cập nhật:", err);

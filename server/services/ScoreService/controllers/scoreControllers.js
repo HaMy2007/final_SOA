@@ -132,13 +132,15 @@ exports.getStudentScoresBySemester = async (req, res) => {
       };
     });
 
-    const gpa = totalCredits > 0 ? (totalWeightedScore / totalCredits).toFixed(2) : null;
+    const semesterGpa = totalCredits > 0 ? (totalWeightedScore / totalCredits).toFixed(2) : null;
 
     res.status(200).json({
       student_id: studentId,
       semester_id: semesterId || null,
       total_credits: totalCredits,
-      gpa,
+      semesterGpa: semesterGpa,
+      gpa: scoreboard.gpa || 0,
+      status: scoreboard.status || "Chưa có",
       scores: result
     });
   } catch (error) {
@@ -347,7 +349,10 @@ exports.importStudentScores = async (req, res) => {
           const classRes = await axios.get(`http://localhost:4000/api/students/${user._id}/advisor`);
           const classInfo = classRes.data;
 
-          if (!classInfo || classInfo.advisor?._id.toString() !== teacher_id.toString()) {
+          console.log(`[DEBUG] classInfo for student ${tdt_id}:`, classInfo);
+
+          if (!classInfo || !classInfo.advisor ||
+            !classInfo.advisor.id || classInfo.advisor?.id.toString() !== teacher_id.toString()) {
             console.warn(`[SKIP] Sinh viên ${tdt_id} không thuộc lớp của cố vấn`);
             skippedStudents.push({
               tdt_id,
@@ -376,11 +381,40 @@ exports.importStudentScores = async (req, res) => {
             scoreboard = new Scoreboard({
               user_id: user._id,
               score: [savedScore._id],
-              status: []
+              status: '',
+              gpa: 0
             });
           } else {
             scoreboard.score.push(savedScore._id);
           }
+
+          const allScores = await Score.find({ _id: { $in: scoreboard.score } });
+
+          const creditPromises = allScores.map(async (s) => {
+            try {
+              const res = await axios.get(`http://localhost:4001/api/subjects/${s.subject_id}`);
+              return { score: s.score, credit: res.data.credit };
+            } catch (err) {
+              console.warn(`Không thể lấy credit cho subject_id: ${s.subject_id}`);
+              return null;
+            }
+          });
+
+          const creditResults = await Promise.all(creditPromises);
+
+          let totalWeighted = 0;
+          let totalCredits = 0;
+
+          for (const item of creditResults) {
+            if (item) {
+              totalWeighted += item.score * item.credit;
+              totalCredits += item.credit;
+            }
+          }
+
+          const gpa = totalCredits > 0 ? totalWeighted / totalCredits : 0;
+          scoreboard.gpa = gpa;
+          scoreboard.status = getStatusFromGPA(gpa);
 
           await scoreboard.save();
           inserted.push(savedScore);
@@ -404,3 +438,11 @@ exports.importStudentScores = async (req, res) => {
       }
     });
 };
+
+function getStatusFromGPA(gpa) {
+  if (gpa >= 9) return "XUẤT SẮC";
+  if (gpa >= 8) return "GIỎI";
+  if (gpa >= 6.5) return "KHÁ";
+  if (gpa >= 5) return "TRUNG BÌNH";
+  return "YẾU";
+}

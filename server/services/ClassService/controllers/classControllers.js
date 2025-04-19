@@ -117,6 +117,20 @@ exports.getClassByStudentId = async (req, res) => {
   }
 };
 
+exports.removeAdvisorFromClass = async (req, res) => {
+  const updated = await Class.findByIdAndUpdate(
+    req.params.classId,
+    { $unset: { class_teacher: "" } },
+    { new: true }
+  );
+  res.json({ message: "Đã gỡ cố vấn khỏi lớp", class: updated });
+};
+
+exports.getClassByTeacherId = async (req, res) => {
+  const classFound = await Class.findOne({ class_teacher: req.params.teacherId });
+  if (!classFound) return res.status(404).json({ message: "Không tìm thấy lớp có cố vấn này" });
+  res.json(classFound);
+};
 
 exports.getAdvisorOfStudent = async (req, res) => {
     try {
@@ -146,7 +160,7 @@ exports.getAdvisorOfStudent = async (req, res) => {
           id: advisor._id,
           name: advisor.name,
           email: advisor.email,
-          role: Array.isArray(advisor.role) ? advisor.role[0] : advisor.role,
+          role: advisor.role,
           phone_number: advisor.phone_number,
           address: advisor.address,
         },
@@ -355,5 +369,47 @@ exports.getAllClasses = async (req, res) => {
   } catch (err) {
     console.error('Lỗi khi lấy danh sách lớp:', err.message);
     res.status(500).json({ message: 'Lỗi server' });
+  }
+};
+
+exports.assignTeacherToClass = async (req, res) => {
+  try {
+    const { class_id, teacher_id } = req.body;
+
+    const updated = await Class.findOneAndUpdate(
+      { class_id },
+      { class_teacher: teacher_id },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy lớp" });
+    }
+
+    res.status(200).json({
+      message: "Gán cố vấn cho lớp thành công",
+      class: updated
+    });
+  } catch (error) {
+    console.error("Lỗi khi gán cố vấn:", error.message);
+    res.status(500).json({ message: "Lỗi server khi gán cố vấn cho lớp" });
+  }
+};
+
+exports.adminDeleteStudentFromClass = async (req, res) => {
+  const studentId = req.params.studentId;
+
+  try {
+    const classDoc = await Class.findOne({ class_member: studentId });
+
+    if (!classDoc) return res.status(200).json({ message: "Sinh viên không thuộc lớp nào" });
+
+    classDoc.class_member = classDoc.class_member.filter(id => id.toString() !== studentId);
+    await classDoc.save();
+
+    res.status(200).json({ message: "Đã xoá sinh viên khỏi lớp", classId: classDoc.class_id });
+  } catch (error) {
+    console.error("Lỗi khi xóa sinh viên khỏi lớp:", error.message);
+    res.status(500).json({ message: "Không thể xóa sinh viên khỏi lớp" });
   }
 };

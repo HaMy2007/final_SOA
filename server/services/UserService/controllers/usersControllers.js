@@ -5,6 +5,7 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const xlsx = require("xlsx");
 const bcrypt = require("bcrypt");
+const axios = require("axios");
 
 exports.getUsersByIds = async (req, res) => {
   try {
@@ -20,6 +21,11 @@ exports.getUsersByIds = async (req, res) => {
     console.error("Lỗi truy vấn sinh viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
+};
+
+exports.getAllStudents = async (req, res) => {
+  const students = await User.find({ role: "student" });
+  res.json(students);
 };
 
 exports.updateUserProfile = async (req, res) => {
@@ -283,24 +289,35 @@ async function insertUsers(users, res) {
     .json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
 }
 
-// userController.js
 exports.deleteAdvisor = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Kiểm tra ID hợp lệ
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    // Kiểm tra user có tồn tại và là cố vấn không
     const advisor = await User.findOne({ _id: userId, role: "advisor" });
     if (!advisor) {
       return res.status(404).json({ message: "Không tìm thấy cố vấn" });
     }
 
-    // Tiến hành xoá
+    const classServiceUrl = "http://localhost:4000/api/classes/by-teacher/" + userId;
+    try {
+      const classRes = await axios.get(classServiceUrl);
+
+      const classData = classRes.data;
+      if (classData && classData._id) {
+        await axios.put(`http://localhost:4000/api/classes/${classData._id}/remove-teacher`, {
+          reason: "Xóa cố vấn",
+        });
+      }
+    } catch (err) {
+      console.warn("Không tìm thấy lớp có cố vấn:", err?.response?.data || err.message);
+    }
+
     await User.findByIdAndDelete(userId);
+    await LoginInfo.findOneAndDelete({ user_id: userId });
 
     return res.status(200).json({ message: "Xoá cố vấn thành công" });
   } catch (error) {
@@ -363,5 +380,104 @@ exports.addStudentByAdmin = async (req, res) => {
   } catch (error) {
     console.error("[ADD STUDENT ERROR]:", error.message);
     res.status(500).json({ message: "Lỗi server khi thêm sinh viên" });
+  }
+};
+
+exports.addAdvisorByAdmin = async (req, res) => {
+  try {
+    const {
+      name,
+      tdt_id,
+      gender: rawGender,
+      phone_number,
+      address,
+      class_id,
+      date_of_birth,
+    } = req.body;
+
+    function normalizeNameToEmail(name) {
+      return name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "d")
+        .replace(/\s+/g, "")
+        .toLowerCase();
+    }
+
+    let gender = rawGender;
+    if (gender === "Nam") gender = "male";
+    else if (gender === "Nữ") gender = "female";
+
+    const email = `${normalizeNameToEmail(name)}@tdtu.edu.vn`;
+
+    if (!name || !tdt_id || !gender || !phone_number || !date_of_birth) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    }
+
+    const existed = await User.findOne({ $or: [{ email }, { tdt_id }] });
+    if (existed) {
+      return res.status(400).json({ message: "Cố vấn đã tồn tại" });
+    }
+
+    const newUser = new User({
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      address,
+      date_of_birth: new Date(date_of_birth),
+      email,
+      role: "advisor",
+    });
+
+    const savedUser = await newUser.save();
+
+    const hashedPassword = await bcrypt.hash(tdt_id, 10);
+    await LoginInfo.create({
+      user_id: savedUser._id,
+      username: tdt_id,
+      password: hashedPassword,
+    });
+
+    try {
+      await axios.put(`http://localhost:4000/api/classes/assign-teacher`, {
+        class_id: class_id,
+        teacher_id: savedUser._id
+      });
+    } catch (err) {
+      console.error("[CLASS SERVICE ERROR]:", err.message);
+      return res.status(500).json({
+        message: "Tạo cố vấn thành công, nhưng gán lớp thất bại",
+        advisor: savedUser
+      });
+    }
+
+    res.status(200).json({
+      message: "Thêm cố vấn thành công",
+      advisor: savedUser,
+    });
+  } catch (err) {
+    console.error("[ADD ADVISOR ERROR]:", err.message);
+    res.status(500).json({ message: "Lỗi server khi thêm cố vấn" });
+  }
+};
+
+// Xoá sinh viên khỏi hệ thống và yêu cầu ClassService xoá khỏi lớp
+exports.fullDeleteStudent = async (req, res) => {
+  const studentId = req.params.id;
+
+  try {
+    // 1. Gọi sang ClassService để xóa khỏi lớp nếu có
+    await axios.delete(`http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`);
+
+    // 2. Xóa khỏi UserService
+    await User.findByIdAndDelete(studentId);
+    await LoginInfo.findOneAndDelete({ user_id: studentId });
+
+    res.status(200).json({ message: "Đã xoá sinh viên khỏi lớp và hệ thống" });
+  } catch (error) {
+    console.error("Lỗi xoá sinh viên:", error.message);
+    res.status(500).json({ message: "Không thể xoá sinh viên" });
   }
 };

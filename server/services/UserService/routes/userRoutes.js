@@ -13,6 +13,8 @@ router.post("/import-advisors", upload.single("file"), userController.importAdvi
 router.get('/tdt/:tdt_id', userController.getUserByTdtId);
 router.delete('/:id', userController.deleteAdvisor);
 router.post("/add-student", userController.addStudentByAdmin);
-
+router.post("/add-advisor", userController.addAdvisorByAdmin);
+router.get("/", userController.getAllStudents);
+router.delete("/full-delete/:id", userController.fullDeleteStudent);
 
 module.exports = router;

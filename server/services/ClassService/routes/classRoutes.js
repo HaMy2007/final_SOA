@@ -14,5 +14,9 @@ router.get('/classes/:classId/advisor', classController.getAdvisorByClassId);
 router.delete('/classes/:classId/remove-student/:userId', classController.removeStudentFromClass);
 router.post('/classes/:classId/add-student', classController.addStudentToClass);
 router.get("/classes", classController.getAllClasses);
-
+router.put("/classes/assign-teacher", classController.assignTeacherToClass);
+router.get("/classes/by-teacher/:teacherId", classController.getClassByTeacherId);
+router.put("/classes/:classId/remove-teacher", classController.removeAdvisorFromClass);
+router.delete("/classes/remove-student-if-exists/:studentId", classController.adminDeleteStudentFromClass);
+  
 module.exports = router;

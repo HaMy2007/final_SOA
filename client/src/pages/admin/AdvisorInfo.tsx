@@ -1,8 +1,9 @@
 import { IoMdAdd } from "react-icons/io";
 import AdvisorList from "../../components/AdvisorList";
 import { useAdvisorInfo } from "../../context/AdvisorInfoContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 const AdvisorInfor = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,9 +16,7 @@ const AdvisorInfor = () => {
     date_of_birth: "",
     phone_number: "",
     address: "",
-    role: "advisor",
-    email: "",
-    class: "",
+    class_id: "",
   });
   const [isAdding, setIsAdding] = useState(false);
 
@@ -50,6 +49,10 @@ const AdvisorInfor = () => {
     }
   };
 
+  useEffect(() => {
+    fetchAdvisors();
+  }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -61,34 +64,42 @@ const AdvisorInfor = () => {
     setNewAdvisor({ ...newAdvisor, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const advisorEmail = `${newAdvisor.name
-      .toLowerCase()
-      .replace(/\s/g, "")}@tdtu.edu.vn`;
-
-    const formattedAdvisor = {
-      ...newAdvisor,
-      email: advisorEmail,
-      date_of_birth: new Date(newAdvisor.date_of_birth),
+    const payload = {
+      name: newAdvisor.name,
+      tdt_id: newAdvisor.tdt_id,
+      gender: newAdvisor.gender,
+      phone_number: newAdvisor.phone_number,
+      address: newAdvisor.address,
+      date_of_birth: newAdvisor.date_of_birth,
+      class_id: newAdvisor.class_id, 
     };
-
-    handleAdd(formattedAdvisor);
-
-    setNewAdvisor({
-      name: "",
-      tdt_id: "",
-      gender: "",
-      date_of_birth: "",
-      phone_number: "",
-      address: "",
-      role: "advisor",
-      email: "",
-      class: "",
-    });
-    setIsAdding(false);
-  };
+  
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post("http://localhost:4003/api/users/add-advisor", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setIsAdding(false);
+      setNewAdvisor({
+        name: "",
+        tdt_id: "",
+        gender: "",
+        date_of_birth: "",
+        phone_number: "",
+        address: "",
+        class_id: ""
+      });
+      fetchAdvisors();
+      Swal.fire("Thành công", "Đã thêm cố vấn vào hệ thống", "success");
+      
+    } catch (err: any) {
+      console.error("Lỗi khi thêm cố vấn:", err);
+      Swal.fire("Lỗi", err || "Không thể thêm cố vấn", "error");
+    }
+  };  
 
   const filteredAdvisors = advisors.filter((advisor) => {
     return Object.values(advisor).some((value) =>
@@ -150,9 +161,9 @@ const AdvisorInfor = () => {
                 />
                 <input
                   type="text"
-                  name="class"
+                  name="class_id"
                   placeholder="Lớp cố vấn dạy"
-                  value={newAdvisor.class}
+                  value={newAdvisor.class_id}
                   onChange={handleInputChange}
                   required
                   className="border rounded-md px-2 mb-4 w-full py-2"
@@ -165,8 +176,8 @@ const AdvisorInfor = () => {
                   className="border rounded-md px-2 mb-4 w-full py-2"
                 >
                   <option value="">Chọn giới tính</option>
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
                 </select>
                 <input
                   type="date"
@@ -214,7 +225,7 @@ const AdvisorInfor = () => {
           </div>
         )}
 
-        <AdvisorList />
+        <AdvisorList advisors={filteredAdvisors} onRefresh={fetchAdvisors}/>
       </div>
     </div>
   );

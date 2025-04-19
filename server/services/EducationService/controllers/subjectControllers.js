@@ -10,6 +10,19 @@ exports.getAllSubjects = async (req, res) => {
     res.status(200).json(subjects);
 };
 
+exports.getSubjectById = async (req, res) => {
+  try {
+    const subject = await Subject.findById(req.params.id);
+    if (!subject) {
+      return res.status(404).json({ message: 'Không tìm thấy môn học' });
+    }
+    res.json(subject);
+  } catch (error) {
+    console.error("Lỗi khi lấy subject theo id:", error.message);
+    res.status(500).json({ message: 'Lỗi server khi lấy môn học' });
+  }
+};
+
 exports.getSubjectsByIds = async (req, res) => {
     try {
       const { ids } = req.body;

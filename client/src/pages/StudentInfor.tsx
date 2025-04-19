@@ -56,24 +56,24 @@ const StudentInfor = () => {
           setStudents(usersRes.data);
           setFilteredStudents(usersRes.data);
         } else if (isAdmin) {
-          const classRes = await axios.get("http://localhost:4000/api/classes", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
+          const [classRes, usersRes] = await Promise.all([
+            axios.get("http://localhost:4000/api/classes", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://localhost:4003/api/users", {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ]);
+        
           setAvailableClasses(classRes.data);
-          const allStudentIds = classRes.data.flatMap((cls: any) => cls.class_member);
-
-          const usersRes = await axios.post(
-            `http://localhost:4003/api/users/batch`,
-            { ids: allStudentIds },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
+        
           const enriched = usersRes.data.map((stu: any) => {
-            const foundClass = classRes.data.find((cls: any) => cls.class_member.includes(stu._id));
+            const foundClass = classRes.data.find((cls: any) =>
+              cls.class_member.includes(stu._id)
+            );
             return { ...stu, class_id: foundClass?.class_id || "" };
           });
-
+        
           setStudents(enriched);
           setFilteredStudents(enriched);
         }
@@ -92,11 +92,20 @@ const StudentInfor = () => {
       const matchesSearch = Object.values(student).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       );
-      const matchesClass = selectedClassId === "" || student.class_id === selectedClassId;
+  
+      let matchesClass = true;
+      if (selectedClassId === "no_class") {
+        matchesClass = !student.class_id; 
+      } else if (selectedClassId !== "") {
+        matchesClass = student.class_id === selectedClassId;
+      }
+  
       return matchesSearch && matchesClass;
     });
+  
     setFilteredStudents(result);
   }, [searchTerm, selectedClassId, students]);
+  
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -233,33 +242,77 @@ const StudentInfor = () => {
   };
   
 
+  // const handleDeleteStudent = async (tdt_id: string, userId: string) => {
+  //   const result = await Swal.fire({
+  //     title: "Xác nhận xoá",
+  //     text: isAdmin
+  //     ? "Bạn có chắc muốn xoá sinh viên này khỏi hệ thống không?"
+  //     : "Bạn có chắc muốn xoá sinh viên này khỏi lớp không?",      
+  //     icon: "warning",
+  //     showCancelButton: true,
+  //     confirmButtonText: "Xoá",
+  //     cancelButtonText: "Huỷ",
+  //   });
+
+  //   if (result.isConfirmed) {
+  //     try {
+  //       await axios.delete(
+  //         `http://localhost:4000/api/classes/${classId}/remove-student/${userId}`,
+  //         {
+  //           headers: { Authorization: `Bearer ${token}` },
+  //         }
+  //       );
+
+  //       setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
+  //       Swal.fire("Đã xoá!", "Sinh viên đã được xoá khỏi lớp.", "success");
+  //     } catch (error) {
+  //       console.error("Lỗi khi xoá sinh viên khỏi lớp:", error);
+  //       Swal.fire("Lỗi", "Không thể xoá sinh viên khỏi lớp.", "error");
+  //     }
+  //   }
+  // }; 
+
   const handleDeleteStudent = async (tdt_id: string, userId: string) => {
     const result = await Swal.fire({
       title: "Xác nhận xoá",
-      text: "Bạn có chắc muốn xoá sinh viên này khỏi lớp không?",
+      text: isAdmin
+        ? "Bạn có chắc muốn xoá sinh viên này khỏi hệ thống không?"
+        : "Bạn có chắc muốn xoá sinh viên này khỏi lớp không?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Xoá",
       cancelButtonText: "Huỷ",
     });
-
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(
-          `http://localhost:4000/api/classes/${classId}/remove-student/${userId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
+  
+    if (!result.isConfirmed) return;
+  
+    try {
+      const token = localStorage.getItem("token");
+  
+      if (isAdmin) {
+        await axios.delete(`http://localhost:4003/api/users/full-delete/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        Swal.fire("Đã xoá!", "Sinh viên đã bị xoá khỏi hệ thống và lớp (nếu có).", "success");
         setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
-        Swal.fire("Đã xoá!", "Sinh viên đã được xoá khỏi lớp.", "success");
-      } catch (error) {
-        console.error("Lỗi khi xoá sinh viên khỏi lớp:", error);
-        Swal.fire("Lỗi", "Không thể xoá sinh viên khỏi lớp.", "error");
+
+      } else if (isAdvisor) {
+        await axios.delete(
+        `http://localhost:4000/api/classes/${classId}/remove-student/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      Swal.fire("Đã xoá!", "Sinh viên đã được xoá khỏi lớp.", "success");
+      setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
       }
+    } catch (error) {
+      console.error("Lỗi khi xoá sinh viên:", error);
+      Swal.fire("Lỗi", "Không thể xoá sinh viên.", "error");
     }
-  }; 
+  };
 
   return (
     <div className="w-full h-full bg-white">
@@ -281,7 +334,8 @@ const StudentInfor = () => {
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
               >
-                <option value="">Tất cả lớp</option>
+                <option value="">Tất cả sinh viên</option>
+                <option value="no_class">Chưa có lớp</option>
                 {availableClasses.map((cls) => (
                   <option key={cls.class_id} value={cls.class_id}>
                     {cls.class_id} - {cls.class_name}
