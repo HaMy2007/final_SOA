@@ -463,15 +463,12 @@ exports.addAdvisorByAdmin = async (req, res) => {
   }
 };
 
-// Xoá sinh viên khỏi hệ thống và yêu cầu ClassService xoá khỏi lớp
 exports.fullDeleteStudent = async (req, res) => {
   const studentId = req.params.id;
 
   try {
-    // 1. Gọi sang ClassService để xóa khỏi lớp nếu có
     await axios.delete(`http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`);
 
-    // 2. Xóa khỏi UserService
     await User.findByIdAndDelete(studentId);
     await LoginInfo.findOneAndDelete({ user_id: studentId });
 

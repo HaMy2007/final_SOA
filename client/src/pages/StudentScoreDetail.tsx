@@ -66,7 +66,7 @@ const StudentScoreDetail = () => {
 
         setGrades(res.data.scores);
         setTotalCredits(res.data.total_credits);
-        setGpa(parseFloat(res.data.gpa));
+        setGpa(parseFloat(selectedSemesterId !== "all" ? res.data.semesterGpa : res.data.gpa));
       } catch (err) {
         console.error("Lỗi khi tải điểm:", err);
       } finally {
