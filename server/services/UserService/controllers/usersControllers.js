@@ -394,7 +394,7 @@ exports.addAdvisorByAdmin = async (req, res) => {
       class_id,
       date_of_birth,
     } = req.body;
-
+    console.log(req.body); 
     function normalizeNameToEmail(name) {
       return name
         .normalize("NFD")

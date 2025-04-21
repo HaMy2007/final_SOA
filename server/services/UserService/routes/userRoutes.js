@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/usersControllers");
 const upload = require('../middlewares/upload');
-const { authenticateToken, authorizeRoles } = require("../middlewares/auth");
+const { authenticateToken, authorizeRoles } = require("../../../middleware/auth");
 
 router.get('/advisors', userController.getAllAdvisors);
 router.post('/batch', userController.getUsersByIds);
@@ -12,10 +12,10 @@ router.post('/import-file', upload.single('file'), userController.importUsersFro
 router.post('/get-ids-by-emails', userController.getUserIdsByEmails);
 router.post("/import-advisors", upload.single("file"), authenticateToken, authorizeRoles("admin"), userController.importAdvisors); //admin import cố vấn
 router.get('/tdt/:tdt_id', userController.getUserByTdtId);
-router.delete('/:id', authenticateToken, authorizeRoles("admin"), userController.deleteAdvisor);
+router.delete('/:id', authenticateToken, authorizeRoles("admin"), userController.deleteAdvisor);  //ok
 router.post("/add-student", authenticateToken, authorizeRoles("admin"), userController.addStudentByAdmin);
 router.post("/add-advisor", authenticateToken, authorizeRoles("admin"), userController.addAdvisorByAdmin);
 router.get("/", userController.getAllStudents);
-router.delete("/full-delete/:id", authenticateToken, authorizeRoles("admin"), userController.fullDeleteStudent);
+router.delete("/full-delete/:id", authenticateToken, authorizeRoles("admin"), userController.fullDeleteStudent); //ôk
 
 module.exports = router;

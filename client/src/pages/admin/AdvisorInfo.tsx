@@ -78,10 +78,11 @@ const AdvisorInfor = () => {
   
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:4003/api/users/add-advisor", payload, {
+      console.log("Token:", token);
+      const res = await axios.post("http://localhost:4003/api/users/add-advisor", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+      console.log("API Response:", res.data);
       setIsAdding(false);
       setNewAdvisor({
         name: "",
@@ -95,10 +96,21 @@ const AdvisorInfor = () => {
       fetchAdvisors();
       Swal.fire("Thành công", "Đã thêm cố vấn vào hệ thống", "success");
       
-    } catch (err: any) {
+    // } catch (err: any) {
+    //   console.error("Lỗi khi thêm cố vấn:", err);
+    //   Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm cố vấn", "error");
+    // }
+    }catch (err: any) {
       console.error("Lỗi khi thêm cố vấn:", err);
-      Swal.fire("Lỗi", err || "Không thể thêm cố vấn", "error");
+    
+      const errorMessage =
+        err.response?.data?.message ||   // Lỗi chi tiết từ server (nếu có)
+        err.message ||                   // Lỗi từ axios
+        "Không thể thêm cố vấn";         // fallback
+    
+      Swal.fire("Lỗi", errorMessage, "error");
     }
+    
   };  
 
   const filteredAdvisors = advisors.filter((advisor) => {
