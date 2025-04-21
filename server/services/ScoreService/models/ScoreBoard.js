@@ -8,10 +8,9 @@ const ScoreboardSchema = new Schema(
         [
             { type: Schema.Types.ObjectId, ref: 'scores' }
         ],
-        status: 
-        [
-            { type: String, enum: ['passed', 'failed'], required: false }
-        ]
+        status: { type: String, required: false },
+        gpa: { type: Number, required: true, default: 0}
+        
     },
     {
         timestamps: true

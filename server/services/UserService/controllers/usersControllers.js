@@ -5,6 +5,10 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const xlsx = require("xlsx");
 const bcrypt = require("bcrypt");
+<<<<<<< HEAD
+=======
+const axios = require("axios");
+>>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
 
 exports.getUsersByIds = async (req, res) => {
   try {
@@ -20,6 +24,14 @@ exports.getUsersByIds = async (req, res) => {
     console.error("Lỗi truy vấn sinh viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
+<<<<<<< HEAD
+=======
+};
+
+exports.getAllStudents = async (req, res) => {
+  const students = await User.find({ role: "student" });
+  res.json(students);
+>>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
 };
 
 exports.updateUserProfile = async (req, res) => {
@@ -30,7 +42,10 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(400).json({ message: "ID người dùng không hợp lệ" });
     }
 
+<<<<<<< HEAD
     // const allowedFields = ["phone_number", "parent_number", "address"];
+=======
+>>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
     const allowedFields = [
       "name",
       "phone_number",
@@ -84,6 +99,17 @@ exports.getUserById = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi lấy user" });
   }
 };
+
+exports.getAllAdvisors = async (req, res) => {
+  try {
+    const advisors = await User.find({ role: 'advisor' });
+    res.status(200).json(advisors);
+  } catch (error) {
+    console.error("[GET ALL ADVISORS ERROR]:", error);
+    res.status(500).json({ message: "Lỗi server khi lấy user", error: error.message });
+  }
+};
+
 
 exports.getUserByTdtId = async (req, res) => {
   try {
@@ -272,3 +298,196 @@ async function insertUsers(users, res) {
     .status(200)
     .json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
 }
+<<<<<<< HEAD
+=======
+
+exports.deleteAdvisor = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    const advisor = await User.findOne({ _id: userId, role: "advisor" });
+    if (!advisor) {
+      return res.status(404).json({ message: "Không tìm thấy cố vấn" });
+    }
+
+    const classServiceUrl = "http://localhost:4000/api/classes/by-teacher/" + userId;
+    try {
+      const classRes = await axios.get(classServiceUrl);
+
+      const classData = classRes.data;
+      if (classData && classData._id) {
+        await axios.put(`http://localhost:4000/api/classes/${classData._id}/remove-teacher`, {
+          reason: "Xóa cố vấn",
+        });
+      }
+    } catch (err) {
+      console.warn("Không tìm thấy lớp có cố vấn:", err?.response?.data || err.message);
+    }
+
+    await User.findByIdAndDelete(userId);
+    await LoginInfo.findOneAndDelete({ user_id: userId });
+
+    return res.status(200).json({ message: "Xoá cố vấn thành công" });
+  } catch (error) {
+    console.error("Lỗi khi xoá cố vấn:", error.message);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.addStudentByAdmin = async (req, res) => {
+  try {
+    const {
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      parent_number,
+      address,
+      date_of_birth,
+    } = req.body;
+
+    if (!name || !tdt_id || !gender || !phone_number || !date_of_birth) {
+      return res.status(400).json({ message: "Thiếu thông tin cần thiết" });
+    }
+    const email = `${tdt_id}@student.tdtu.edu.vn`;
+    const existingUser = await User.findOne({
+      $or: [{ tdt_id }, { email }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Sinh viên đã tồn tại trong hệ thống" });
+    }
+
+    const newUser = new User({
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      parent_number,
+      address,
+      date_of_birth: new Date(date_of_birth),
+      email,
+      role: "student",
+    });
+
+    const savedUser = await newUser.save();
+
+    const hashedPassword = await bcrypt.hash(tdt_id, 10);
+    const loginInfo = new LoginInfo({
+      user_id: savedUser._id,
+      username: tdt_id,
+      password: hashedPassword,
+    });
+
+    await loginInfo.save();
+
+    res.status(201).json({
+      message: "Thêm sinh viên thành công",
+      student: savedUser,
+    });
+  } catch (error) {
+    console.error("[ADD STUDENT ERROR]:", error.message);
+    res.status(500).json({ message: "Lỗi server khi thêm sinh viên" });
+  }
+};
+
+exports.addAdvisorByAdmin = async (req, res) => {
+  try {
+    const {
+      name,
+      tdt_id,
+      gender: rawGender,
+      phone_number,
+      address,
+      class_id,
+      date_of_birth,
+    } = req.body;
+    console.log(req.body); 
+    function normalizeNameToEmail(name) {
+      return name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "d")
+        .replace(/\s+/g, "")
+        .toLowerCase();
+    }
+
+    let gender = rawGender;
+    if (gender === "Nam") gender = "male";
+    else if (gender === "Nữ") gender = "female";
+
+    const email = `${normalizeNameToEmail(name)}@tdtu.edu.vn`;
+
+    if (!name || !tdt_id || !gender || !phone_number || !date_of_birth) {
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
+    }
+
+    const existed = await User.findOne({ $or: [{ email }, { tdt_id }] });
+    if (existed) {
+      return res.status(400).json({ message: "Cố vấn đã tồn tại" });
+    }
+
+    const newUser = new User({
+      name,
+      tdt_id,
+      gender,
+      phone_number,
+      address,
+      date_of_birth: new Date(date_of_birth),
+      email,
+      role: "advisor",
+    });
+
+    const savedUser = await newUser.save();
+
+    const hashedPassword = await bcrypt.hash(tdt_id, 10);
+    await LoginInfo.create({
+      user_id: savedUser._id,
+      username: tdt_id,
+      password: hashedPassword,
+    });
+
+    try {
+      await axios.put(`http://localhost:4000/api/classes/assign-teacher`, {
+        class_id: class_id,
+        teacher_id: savedUser._id
+      });
+    } catch (err) {
+      console.error("[CLASS SERVICE ERROR]:", err.message);
+      return res.status(500).json({
+        message: "Tạo cố vấn thành công, nhưng gán lớp thất bại",
+        advisor: savedUser
+      });
+    }
+
+    res.status(200).json({
+      message: "Thêm cố vấn thành công",
+      advisor: savedUser,
+    });
+  } catch (err) {
+    console.error("[ADD ADVISOR ERROR]:", err.message);
+    res.status(500).json({ message: "Lỗi server khi thêm cố vấn" });
+  }
+};
+
+exports.fullDeleteStudent = async (req, res) => {
+  const studentId = req.params.id;
+
+  try {
+    await axios.delete(`http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`);
+
+    await User.findByIdAndDelete(studentId);
+    await LoginInfo.findOneAndDelete({ user_id: studentId });
+
+    res.status(200).json({ message: "Đã xoá sinh viên khỏi lớp và hệ thống" });
+  } catch (error) {
+    console.error("Lỗi xoá sinh viên:", error.message);
+    res.status(500).json({ message: "Không thể xoá sinh viên" });
+  }
+};
+>>>>>>> badb408e5d96f9f7692952943d722846d92dbf48

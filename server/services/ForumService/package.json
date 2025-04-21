@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
+    "start": "nodemon --inspect index.js",
     "dev": "nodemon index.js"
   },
   "author": "",
@@ -16,6 +16,10 @@
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "forumservice": "file:",
-    "mongoose": "^8.13.2"
+    "mongoose": "^8.13.2",
+    "nodemailer": "^6.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
   }
 }

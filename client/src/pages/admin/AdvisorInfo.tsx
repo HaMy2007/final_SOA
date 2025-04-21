@@ -1,14 +1,14 @@
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { IoMdAdd } from "react-icons/io";
+import Swal from "sweetalert2";
 import AdvisorList from "../../components/AdvisorList";
 import { useAdvisorInfo } from "../../context/AdvisorInfoContext";
-import { useState } from "react";
-import { CiImport } from "react-icons/ci";
 
-type Props = {};
-
-const AdvisorInfor = (props: Props) => {
+const AdvisorInfor = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { advisors, handleAdd } = useAdvisorInfo();
+  const { handleAdd } = useAdvisorInfo();
+  const [advisors, setAdvisors] = useState<any[]>([]);
   const [newAdvisor, setNewAdvisor] = useState({
     name: "",
     tdt_id: "",
@@ -16,11 +16,42 @@ const AdvisorInfor = (props: Props) => {
     date_of_birth: "",
     phone_number: "",
     address: "",
-    role: "advisor",
-    email: "",
-    class: "",
+    class_id: "",
   });
   const [isAdding, setIsAdding] = useState(false);
+
+  const fetchAdvisors = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:4003/api/users/advisors", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const advisorList = res.data;
+      const updatedAdvisors = await Promise.all(
+        advisorList.map(async (advisor: any) => {
+          try {
+            const classRes = await axios.get(
+              `http://localhost:4000/api/teachers/${advisor._id}/class`
+            );
+            return {
+              ...advisor,
+              class_name: classRes.data.class.class_name,
+              class_id: classRes.data.class.class_id,
+            };
+          } catch {
+            return { ...advisor, class_name: "Chưa có lớp", class_id: "" };
+          }
+        })
+      );
+      setAdvisors(updatedAdvisors);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách cố vấn:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdvisors();
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -33,34 +64,54 @@ const AdvisorInfor = (props: Props) => {
     setNewAdvisor({ ...newAdvisor, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const advisorEmail = `${newAdvisor.name
-      .toLowerCase()
-      .replace(/\s/g, "")}@tdtu.edu.vn`;
-
-    const formattedAdvisor = {
-      ...newAdvisor,
-      email: advisorEmail,
-      date_of_birth: new Date(newAdvisor.date_of_birth),
+    const payload = {
+      name: newAdvisor.name,
+      tdt_id: newAdvisor.tdt_id,
+      gender: newAdvisor.gender,
+      phone_number: newAdvisor.phone_number,
+      address: newAdvisor.address,
+      date_of_birth: newAdvisor.date_of_birth,
+      class_id: newAdvisor.class_id, 
     };
-
-    handleAdd(formattedAdvisor);
-
-    setNewAdvisor({
-      name: "",
-      tdt_id: "",
-      gender: "",
-      date_of_birth: "",
-      phone_number: "",
-      address: "",
-      role: "advisor",
-      email: "",
-      class: "",
-    });
-    setIsAdding(false);
-  };
+  
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Token:", token);
+      const res = await axios.post("http://localhost:4003/api/users/add-advisor", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log("API Response:", res.data);
+      setIsAdding(false);
+      setNewAdvisor({
+        name: "",
+        tdt_id: "",
+        gender: "",
+        date_of_birth: "",
+        phone_number: "",
+        address: "",
+        class_id: ""
+      });
+      fetchAdvisors();
+      Swal.fire("Thành công", "Đã thêm cố vấn vào hệ thống", "success");
+      
+    // } catch (err: any) {
+    //   console.error("Lỗi khi thêm cố vấn:", err);
+    //   Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm cố vấn", "error");
+    // }
+    }catch (err: any) {
+      console.error("Lỗi khi thêm cố vấn:", err);
+    
+      const errorMessage =
+        err.response?.data?.message ||   // Lỗi chi tiết từ server (nếu có)
+        err.message ||                   // Lỗi từ axios
+        "Không thể thêm cố vấn";         // fallback
+    
+      Swal.fire("Lỗi", errorMessage, "error");
+    }
+    
+  };  
 
   const filteredAdvisors = advisors.filter((advisor) => {
     return Object.values(advisor).some((value) =>
@@ -88,10 +139,10 @@ const AdvisorInfor = (props: Props) => {
               Thêm cố vấn
             </button>
 
-            <button className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl">
+            {/* <button className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl">
               <CiImport className="text-white font-bold" />
               Import dscv
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -122,9 +173,9 @@ const AdvisorInfor = (props: Props) => {
                 />
                 <input
                   type="text"
-                  name="class"
+                  name="class_id"
                   placeholder="Lớp cố vấn dạy"
-                  value={newAdvisor.class}
+                  value={newAdvisor.class_id}
                   onChange={handleInputChange}
                   required
                   className="border rounded-md px-2 mb-4 w-full py-2"
@@ -137,8 +188,8 @@ const AdvisorInfor = (props: Props) => {
                   className="border rounded-md px-2 mb-4 w-full py-2"
                 >
                   <option value="">Chọn giới tính</option>
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
                 </select>
                 <input
                   type="date"
@@ -186,7 +237,7 @@ const AdvisorInfor = (props: Props) => {
           </div>
         )}
 
-        <AdvisorList advisors={filteredAdvisors} />
+        <AdvisorList advisors={filteredAdvisors} onRefresh={fetchAdvisors}/>
       </div>
     </div>
   );

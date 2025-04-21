@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { PostType } from "../types/post";
 import axios from "axios";
+import { useEffect, useState } from "react";
 import { MdDelete } from "react-icons/md";
+import Swal from "sweetalert2";
+import { PostType } from "../types/post";
 
 const Forum = () => {
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -115,15 +116,40 @@ const Forum = () => {
     }
   };
 
-  const handleDeletePost = (postId: string) => {
-    const confirmDelete = window.confirm(
-      "Bạn có chắc chắn muốn xóa bài viết này?"
-    );
-    if (!confirmDelete) return;
+  const handleDeletePost = async (postId: string) => {
+    const result = await Swal.fire({
+      title: "Bạn có chắc chắn?",
+      text: "Hành động này sẽ xóa bài viết khỏi hệ thống!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa",
+      cancelButtonText: "Hủy",
+    });
 
-    // Chức năng xóa sẽ thêm sau nếu API hỗ trợ
-    const updatedPosts = posts.filter((p) => p._id !== postId);
-    setPosts(updatedPosts);
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`http://localhost:4004/api/posts/${postId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        await fetchUserAndPosts();
+
+        Swal.fire({
+          title: "Đã xóa!",
+          text: "Bài viết đã được xóa.",
+          icon: "success",
+        });
+      } catch (err) {
+        console.error("Lỗi khi xóa bài viết:", err);
+        Swal.fire({
+          title: "Lỗi!",
+          text: "Không thể xóa bài viết. Vui lòng thử lại.",
+          icon: "error",
+        });
+      }
+    }
   };
 
   return (

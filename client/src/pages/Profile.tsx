@@ -1,7 +1,8 @@
-import { useNavigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
 import axios from "axios";
+import React, { useEffect, useState } from "react";
 import { FaEdit } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import { UpdateUserData } from "../types/updateUser";
 
 const Profile = () => {
@@ -52,10 +53,6 @@ const Profile = () => {
         throw new Error("Thông tin người dùng không hợp lệ");
       }
 
-      // if (!editedUser.name?.trim()) {
-      //   throw new Error("Vui lòng nhập họ tên");
-      // }
-
       if (!editedUser.date_of_birth) {
         throw new Error("Vui lòng chọn ngày sinh");
       }
@@ -84,6 +81,15 @@ const Profile = () => {
         throw new Error("Không tìm thấy ID người dùng");
       }
 
+      const confirmResult = await Swal.fire({
+        title: "Xác nhận cập nhật",
+        text: "Bạn có chắc chắn muốn lưu thay đổi?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Đồng ý",
+        cancelButtonText: "Hủy",
+      });
+      if (!confirmResult.isConfirmed) return;
       const response = await axios.put(
         `http://localhost:4003/api/users/${userDetail._id}`,
         updateData,
@@ -105,7 +111,6 @@ const Profile = () => {
         };
         setUserDetail(updatedUserData);
 
-        // Cập nhật localStorage
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
         const updatedUser = {
           ...currentUser,
@@ -114,7 +119,11 @@ const Profile = () => {
         localStorage.setItem("user", JSON.stringify(updatedUser));
 
         setIsEditing(false);
-        alert("Cập nhật thông tin thành công!");
+        Swal.fire({
+          icon: "success",
+          title: "Thành công",
+          text: "Cập nhật thông tin thành công!",
+        });
       }
     } catch (error: any) {
       let errorMessage = "Có lỗi xảy ra khi cập nhật thông tin!";
@@ -125,7 +134,12 @@ const Profile = () => {
         errorMessage = error.message;
       }
 
-      alert(errorMessage);
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: errorMessage,
+      });
+
       console.error("Lỗi cập nhật thông tin:", error);
     }
   };
@@ -190,7 +204,7 @@ const Profile = () => {
     );
   }
 
-  // --- Cố vấn và sinh viên ---
+  // --- Cố vấn và admin ---
   if (role === "advisor" || role === "admin") {
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4 flex justify-center items-start">
@@ -253,8 +267,18 @@ const Profile = () => {
                 <input
                   type="text"
                   name="phone_number"
-                  value={editedUser.phone_number}
-                  onChange={handleInputChange}
+                  value={
+                    editedUser.phone_number?.startsWith("0")
+                      ? editedUser.phone_number
+                      : "0" + editedUser.phone_number
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const sanitized = value.startsWith("0")
+                      ? value.slice(1)
+                      : value;
+                    setEditedUser({ ...editedUser, phone_number: sanitized });
+                  }}
                   className="w-full border rounded-md px-3 py-2 mt-1"
                 />
               </div>

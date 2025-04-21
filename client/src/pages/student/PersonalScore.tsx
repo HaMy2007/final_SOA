@@ -1,19 +1,22 @@
-import { useEffect, useState } from "react";
 import axios from "axios";
+import { useEffect, useState } from "react";
 
 const PersonalScore = () => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const tdt_id = user.tdt_id;
 
-  const [grades, setGrades] = useState<any[]>([]);
   const [userDetail, setUserDetail] = useState<any>(null);
+  const [semesters, setSemesters] = useState<any[]>([]);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");
+  const [grades, setGrades] = useState<any[]>([]);
+  const [totalCredits, setTotalCredits] = useState(0);
+  const [gpa, setGpa] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserAndSemesters = async () => {
       try {
-        // Lấy thông tin người dùng
         const userRes = await axios.get(
           `http://localhost:4003/api/users/tdt/${tdt_id}`,
           {
@@ -21,43 +24,60 @@ const PersonalScore = () => {
           }
         );
         setUserDetail(userRes.data);
-        const studentId = userRes.data._id;
-        // Lấy điểm
-        const scoreRes = await axios.get(
-          `http://localhost:4002/api/students/${studentId}/scores-by-semester`,
+
+        const scoreGroupedRes = await axios.get(
+          `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const groupedData = scoreGroupedRes.data as Record<
+          string,
+          { name: string }
+        >;
+        const formatted = Object.entries(groupedData).map(([id, { name }]) => ({
+          id,
+          name,
+        }));
+
+        setSemesters(formatted);
+      } catch (err) {
+        console.error("Lỗi khi tải thông tin user hoặc học kỳ:", err);
+      }
+    };
+
+    fetchUserAndSemesters();
+  }, [tdt_id, token]);
+
+  // Lấy điểm theo kỳ
+  useEffect(() => {
+    const fetchScores = async () => {
+      if (!userDetail) return;
+      setLoading(true);
+      try {
+        const query =
+          selectedSemesterId !== "all"
+            ? `?semester_id=${selectedSemesterId}`
+            : "";
+
+        const res = await axios.get(
+          `http://localhost:4002/api/students/${userDetail._id}/scores${query}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        const groupedData = scoreRes.data;
-
-        // Chuyển dữ liệu từ object theo kỳ thành mảng
-        const allGrades = Object.entries(groupedData).flatMap(
-          ([semesterName, gradeArray]) =>
-            (gradeArray as any[]).map((g) => ({
-              ...g,
-              semester_name: semesterName,
-            }))
-        );
-
-        setGrades(allGrades);
+        setGrades(res.data.scores);
+        setTotalCredits(res.data.total_credits);
+        setGpa(parseFloat(res.data.gpa));
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu điểm:", err);
+        console.error("Lỗi khi tải bảng điểm:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [tdt_id, token]);
-
-  const totalCredits = grades.reduce((sum, g) => sum + (g.credit || 0), 0);
-  const avgGrade =
-    totalCredits > 0
-      ? grades.reduce((sum, g) => sum + (g.score || 0) * g.credit, 0) /
-        totalCredits
-      : 0;
+    fetchScores();
+  }, [userDetail, selectedSemesterId]);
 
   if (loading) return <div className="p-6">Đang tải dữ liệu...</div>;
 
@@ -70,7 +90,7 @@ const PersonalScore = () => {
             <strong>TDTU ID:</strong> {userDetail.tdt_id}
           </p>
           <p className="text-sm mb-1">
-            <strong>GPA:</strong> {avgGrade.toFixed(2)}
+            <strong>CPA:</strong> {gpa.toFixed(2)}
           </p>
           <p className="text-sm mb-1">
             <strong>Số tín chỉ:</strong> {totalCredits}
@@ -78,10 +98,10 @@ const PersonalScore = () => {
           <p className="text-sm mb-4">
             <strong>Trạng thái:</strong> Bình thường
           </p>
-          {/* <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-gray-500 mb-3">
             Nhấn nút lọc ở cột <strong>Kì học</strong> để xem chi tiết từng kì
           </p>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
+          {/* <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
             Xem điểm hệ 4
           </button> */}
         </div>
@@ -94,7 +114,24 @@ const PersonalScore = () => {
                 <th className="p-3 text-left">Mã học phần</th>
                 <th className="p-3 text-center">Tín chỉ</th>
                 <th className="p-3 text-center">Điểm hệ 10</th>
-                <th className="p-3 text-left">Kì học</th>
+                {/* <th className="p-3 text-left">Kì học</th> */}
+                <th className="p-3 text-left">
+                  <div className="flex flex-col">
+                    <span>Kì học</span>
+                    <select
+                      className="text-sm mt-1 px-2 py-1 border rounded bg-white"
+                      value={selectedSemesterId}
+                      onChange={(e) => setSelectedSemesterId(e.target.value)}
+                    >
+                      <option value="all">Tất cả</option>
+                      {semesters.map((semester) => (
+                        <option key={semester.id} value={semester.id}>
+                          {semester.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -104,7 +141,9 @@ const PersonalScore = () => {
                   <td className="p-3">{grade.subject_code}</td>
                   <td className="p-3 text-center">{grade.credit}</td>
                   <td className="p-3 text-center">{grade.score ?? "-"}</td>
-                  <td className="p-3">{grade.semester_name}</td>
+                  <td className="p-3">
+                    {selectedSemesterId === "all" ? grade.semester_name : ""}
+                  </td>
                 </tr>
               ))}
               <tr className="font-semibold border-t">
@@ -112,7 +151,7 @@ const PersonalScore = () => {
                   Tổng kết
                 </td>
                 <td className="p-3 text-center">{totalCredits}</td>
-                <td className="p-3 text-center">{avgGrade.toFixed(2)}</td>
+                <td className="p-3 text-center">{gpa.toFixed(2)}</td>
                 <td className="p-3"></td>
               </tr>
             </tbody>
