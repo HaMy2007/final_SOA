@@ -5,10 +5,7 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const xlsx = require("xlsx");
 const bcrypt = require("bcrypt");
-<<<<<<< HEAD
-=======
 const axios = require("axios");
->>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
 
 exports.getUsersByIds = async (req, res) => {
   try {
@@ -24,14 +21,11 @@ exports.getUsersByIds = async (req, res) => {
     console.error("Lỗi truy vấn sinh viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
-<<<<<<< HEAD
-=======
 };
 
 exports.getAllStudents = async (req, res) => {
   const students = await User.find({ role: "student" });
   res.json(students);
->>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
 };
 
 exports.updateUserProfile = async (req, res) => {
@@ -42,10 +36,6 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(400).json({ message: "ID người dùng không hợp lệ" });
     }
 
-<<<<<<< HEAD
-    // const allowedFields = ["phone_number", "parent_number", "address"];
-=======
->>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
     const allowedFields = [
       "name",
       "phone_number",
@@ -102,14 +92,15 @@ exports.getUserById = async (req, res) => {
 
 exports.getAllAdvisors = async (req, res) => {
   try {
-    const advisors = await User.find({ role: 'advisor' });
+    const advisors = await User.find({ role: "advisor" });
     res.status(200).json(advisors);
   } catch (error) {
     console.error("[GET ALL ADVISORS ERROR]:", error);
-    res.status(500).json({ message: "Lỗi server khi lấy user", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Lỗi server khi lấy user", error: error.message });
   }
 };
-
 
 exports.getUserByTdtId = async (req, res) => {
   try {
@@ -298,8 +289,6 @@ async function insertUsers(users, res) {
     .status(200)
     .json({ message: `Đã thêm ${inserted.length} người dùng`, inserted });
 }
-<<<<<<< HEAD
-=======
 
 exports.deleteAdvisor = async (req, res) => {
   try {
@@ -314,18 +303,25 @@ exports.deleteAdvisor = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy cố vấn" });
     }
 
-    const classServiceUrl = "http://localhost:4000/api/classes/by-teacher/" + userId;
+    const classServiceUrl =
+      "http://localhost:4000/api/classes/by-teacher/" + userId;
     try {
       const classRes = await axios.get(classServiceUrl);
 
       const classData = classRes.data;
       if (classData && classData._id) {
-        await axios.put(`http://localhost:4000/api/classes/${classData._id}/remove-teacher`, {
-          reason: "Xóa cố vấn",
-        });
+        await axios.put(
+          `http://localhost:4000/api/classes/${classData._id}/remove-teacher`,
+          {
+            reason: "Xóa cố vấn",
+          }
+        );
       }
     } catch (err) {
-      console.warn("Không tìm thấy lớp có cố vấn:", err?.response?.data || err.message);
+      console.warn(
+        "Không tìm thấy lớp có cố vấn:",
+        err?.response?.data || err.message
+      );
     }
 
     await User.findByIdAndDelete(userId);
@@ -355,11 +351,13 @@ exports.addStudentByAdmin = async (req, res) => {
     }
     const email = `${tdt_id}@student.tdtu.edu.vn`;
     const existingUser = await User.findOne({
-      $or: [{ tdt_id }, { email }]
+      $or: [{ tdt_id }, { email }],
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Sinh viên đã tồn tại trong hệ thống" });
+      return res
+        .status(400)
+        .json({ message: "Sinh viên đã tồn tại trong hệ thống" });
     }
 
     const newUser = new User({
@@ -406,7 +404,7 @@ exports.addAdvisorByAdmin = async (req, res) => {
       class_id,
       date_of_birth,
     } = req.body;
-    console.log(req.body); 
+    console.log(req.body);
     function normalizeNameToEmail(name) {
       return name
         .normalize("NFD")
@@ -455,13 +453,13 @@ exports.addAdvisorByAdmin = async (req, res) => {
     try {
       await axios.put(`http://localhost:4000/api/classes/assign-teacher`, {
         class_id: class_id,
-        teacher_id: savedUser._id
+        teacher_id: savedUser._id,
       });
     } catch (err) {
       console.error("[CLASS SERVICE ERROR]:", err.message);
       return res.status(500).json({
         message: "Tạo cố vấn thành công, nhưng gán lớp thất bại",
-        advisor: savedUser
+        advisor: savedUser,
       });
     }
 
@@ -479,7 +477,9 @@ exports.fullDeleteStudent = async (req, res) => {
   const studentId = req.params.id;
 
   try {
-    await axios.delete(`http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`);
+    await axios.delete(
+      `http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`
+    );
 
     await User.findByIdAndDelete(studentId);
     await LoginInfo.findOneAndDelete({ user_id: studentId });
@@ -490,4 +490,3 @@ exports.fullDeleteStudent = async (req, res) => {
     res.status(500).json({ message: "Không thể xoá sinh viên" });
   }
 };
->>>>>>> badb408e5d96f9f7692952943d722846d92dbf48
