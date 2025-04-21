@@ -6,7 +6,6 @@ const StudentScoreDetail = () => {
 
   const { studentId } = useParams();
   const token = localStorage.getItem("token");
-
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [semesters, setSemesters] = useState<any[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState("all");
