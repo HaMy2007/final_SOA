@@ -231,13 +231,13 @@ const Home = () => {
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">Tiện ích</h1>
             <div className="grid grid-cols-12 gap-4">
-              <Link
+              {/* <Link
                 to={`/${role}/forum`}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <MdForum className="w-12 h-12 text-amber-400" />
                 <span className="ml-2 text-xl">Diễn đàn</span>
-              </Link>
+              </Link> */}
               <Link
                 to={`/${role}/advisorInfo`}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
