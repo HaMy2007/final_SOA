@@ -11,6 +11,7 @@ import {
 } from "react-icons/md";
 import { SiInformatica } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
+import { useClass } from "../context/ClassContext";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -22,7 +23,10 @@ const Home = () => {
   const [userDetail, setUserDetail] = useState<any>(null);
   const [advisor, setAdvisor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [studentClass, setStudentClass] = useState<any>(null);
+
+  const { studentClass, setStudentClass, classes } = useClass();
+
+  console.log("cac lop duoc tao ", classes);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,8 +53,12 @@ const Home = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
+
+          console.log("advRes o student", advRes);
           setAdvisor(advRes.data.advisor);
           setStudentClass(advRes.data.class);
+
+          // console.log("Student Class:", advRes.data.class);
         }
         if (fetchedUser.role === "advisor") {
           const advisorId = fetchedUser._id;
@@ -60,7 +68,12 @@ const Home = () => {
               headers: { Authorization: `Bearer ${token}` },
             }
           );
+
+          console.log("classRes o covan", classRes);
+
           setStudentClass(classRes.data.class);
+
+          console.log("Advisor Class:", classRes.data.class);
         }
       } catch (err) {
         console.error("Lỗi lấy thông tin người dùng:", err);
@@ -209,8 +222,8 @@ const Home = () => {
               Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên -
               cố vấn học tập!
             </h1>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
+            <div className="grid grid-cols-12 gap-4 bg-white rounded-lg shadow-xl relative">
+              <div className="col-span-10 p-4   flex flex-col gap-3">
                 <div className="flex flex-col gap-8">
                   <h2 className="text-xl font-bold">Thông tin cá nhân</h2>
                   <div className="flex flex-col">
@@ -231,13 +244,13 @@ const Home = () => {
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">Tiện ích</h1>
             <div className="grid grid-cols-12 gap-4">
-              {/* <Link
-                to={`/${role}/forum`}
+              <Link
+                to={`/${role}/class`}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <MdForum className="w-12 h-12 text-amber-400" />
-                <span className="ml-2 text-xl">Diễn đàn</span>
-              </Link> */}
+                <span className="ml-2 text-xl">Quản lý lớp học</span>
+              </Link>
               <Link
                 to={`/${role}/advisorInfo`}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
@@ -274,13 +287,13 @@ const Home = () => {
                 <MdOutlineDashboardCustomize className="w-12 h-12 text-pink-400" />
                 <span className="ml-2 text-xl">Dashboard</span>
               </Link>
-              <button
+              {/* <button
                 onClick={handleLogout}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex items-center flex-col w-full"
               >
                 <CiLogout className="w-12 h-12 text-red-600" />
                 <span className="ml-2 text-xl">Đăng xuất</span>
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

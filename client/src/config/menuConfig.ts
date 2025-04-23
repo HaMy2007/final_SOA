@@ -1,13 +1,16 @@
-import { GrScorecard } from "react-icons/gr";
-import { MdForum, MdOutlineScore } from "react-icons/md";
 import { FaHome } from "react-icons/fa";
+import { GrScorecard } from "react-icons/gr";
 import { ImProfile } from "react-icons/im";
-import { MdOutlineDashboardCustomize } from "react-icons/md";
+import {
+  MdForum,
+  MdOutlineDashboardCustomize,
+  MdOutlineScore,
+} from "react-icons/md";
 
-import { Role } from "../types/auth";
 import React from "react";
 import { IoMdInformationCircle } from "react-icons/io";
 import { SiInformatica } from "react-icons/si";
+import { Role } from "../types/auth";
 
 interface MenuItem {
   path: string;
@@ -69,6 +72,12 @@ export const menuItems: MenuItem[] = [
     path: "advisorInfo",
     label: "Thông tin cố vấn",
     icon: SiInformatica,
+    allowedRoles: ["admin"],
+  },
+  {
+    path: "class",
+    label: "Quản lý lớp học",
+    icon: MdForum,
     allowedRoles: ["admin"],
   },
 ];

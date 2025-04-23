@@ -1,25 +1,27 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
+import NewPassword from "./components/NewPassword";
+import PrivateRoute from "./components/PrivateRoute";
+import { AdvisorInfoProvider } from "./context/AdvisorInfoContext";
+import { StudentInfoProvider } from "./context/StudentInfoContext";
+import AdvisorInfor from "./pages/admin/AdvisorInfo";
+import ClassDetail from "./pages/admin/ClassDetail";
+import ClassManagement from "./pages/admin/ClassManagement";
+import ChangePassword from "./pages/ChangePassword";
+import Dashboard from "./pages/Dashboard";
+import DatabaseManagement from "./pages/DatabaseManagement";
+import Forum from "./pages/Forum";
+import Home from "./pages/Home";
 import Layout from "./pages/Layout";
 import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Forum from "./pages/Forum";
-import Profile from "./pages/Profile";
 import NoPage from "./pages/NoPage";
-import PrivateRoute from "./components/PrivateRoute";
+import Profile from "./pages/Profile";
+import ResetPassword from "./pages/ResetPassword";
 import PersonalScore from "./pages/student/PersonalScore";
 import StudentInfor from "./pages/StudentInfor";
-import Unauthorized from "./pages/Unauthorized";
-import ChangePassword from "./pages/ChangePassword";
-import ResetPassword from "./pages/ResetPassword";
-import NewPassword from "./components/NewPassword";
-import DatabaseManagement from "./pages/DatabaseManagement";
-import { StudentInfoProvider } from "./context/StudentInfoContext";
-import StudentScoresList from "./pages/StudentScoresList";
 import StudentScoreDetail from "./pages/StudentScoreDetail";
-import Dashboard from "./pages/Dashboard";
-import AdvisorInfor from "./pages/admin/AdvisorInfo";
-import { AdvisorInfoProvider } from "./context/AdvisorInfoContext";
+import StudentScoresList from "./pages/StudentScoresList";
+import Unauthorized from "./pages/Unauthorized";
 
 const App = () => {
   return (
@@ -43,7 +45,9 @@ const App = () => {
           }
         >
           <Route index element={<Home />} />
-          <Route path="forum" element={<Forum />} />
+          {/* <Route path="forum" element={<Forum />} /> */}
+          <Route path="class" element={<ClassManagement />} />
+          <Route path="class/:classId" element={<ClassDetail />} />
           <Route path="profile" element={<Profile />} />
           <Route path="*" element={<NoPage />} />
           <Route path="studentScore" element={<StudentScoresList />} />
