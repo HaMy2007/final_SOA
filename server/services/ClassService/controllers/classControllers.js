@@ -67,7 +67,7 @@ exports.getAdvisorByClassId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("[ClassService] Lỗi lấy thông tin cố vấn:", error.message);
+    // console.error("[ClassService] Lỗi lấy thông tin cố vấn:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -172,26 +172,44 @@ exports.getAdvisorOfStudent = async (req, res) => {
     }
 };
 
+const generateClassID = (class_name) => {
+  const match = class_name.match(/K(\d+)/i); 
+  let prefix = '00';
+
+  if (match && match[1]) {
+    const year = parseInt(match[1], 10); 
+    const base = year - 4;               
+    prefix = base.toString().padStart(2, '0'); 
+  }
+
+  const middle = '050'; 
+  const randomSuffix = Math.floor(100 + Math.random() * 900); 
+
+  return prefix + middle + randomSuffix.toString(); 
+};
+
 exports.addClass = async (req, res) => {
     try {
-      const { class_id, class_name, class_member, teacherId } = req.body;
+      const { class_name } = req.body;
   
-      // Check thông tin cần thiết
-      if (!class_id || !class_name || !teacherId) {
-        return res.status(400).json({ message: 'Thiếu class_id, class_name hoặc teacherId' });
+      if (!class_name) {
+        return res.status(400).json({ message: 'Thiếu class_name' });
       }
   
-      // Kiểm tra mã lớp trùng
-      const existing = await Class.findOne({ class_id });
+      const class_id = generateClassID(class_name);
+      const existing = await Class.findOne({ 
+        $or: [
+          { class_id },
+          { class_name }  
+        ]
+      });
       if (existing) {
-        return res.status(409).json({ message: 'Mã lớp đã tồn tại' });
+        return res.status(409).json({ message: 'Lớp đã tồn tại' });
       }
   
       const newClass = new Class({
         class_id,
         class_name,
-        class_teacher: teacherId,
-        class_member: class_member || []
       });
   
       await newClass.save();
@@ -206,6 +224,24 @@ exports.addClass = async (req, res) => {
       res.status(500).json({ message: 'Lỗi server' });
     }
 };
+
+exports.getClassById = async (req, res) => {
+  try {
+    const { class_id } = req.params;
+
+    const foundClass = await Class.findOne({ class_id });
+
+    if (!foundClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp" });
+    }
+
+    res.status(200).json({ class: foundClass });
+  } catch (err) {
+    console.error("Lỗi khi lấy lớp:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
   
 exports.getClassSizeById = async (req, res) => {
   try {
@@ -215,14 +251,12 @@ exports.getClassSizeById = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu class_id' });
     }
 
-    // Tìm lớp theo class_id
     const classDoc = await Class.findOne({ class_id });
 
     if (!classDoc) {
       return res.status(404).json({ message: 'Không tìm thấy lớp với class_id đã cho' });
     }
 
-    // Lấy sĩ số từ độ dài mảng class_member
     const totalStudents = classDoc.class_member.length;
 
     res.status(200).json({
@@ -362,9 +396,49 @@ exports.addStudentToClass = async (req, res) => {
   }
 };
 
+exports.addAdvisorToClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { email } = req.body;
+
+    const userServiceURL = "http://localhost:4003/api/users/get-ids-by-emails";
+    const userResponse = await axios.post(userServiceURL, {
+      emails: [email],
+    });
+
+    const userIds = userResponse.data.userIds;
+    if (!userIds || userIds.length === 0) {
+      return res.status(404).json({ message: "Email cố vấn không tồn tại trong hệ thống" });
+    }
+
+    const advisorId = userIds[0];
+
+    const existingClass = await Class.findOne({ class_id: classId });
+
+    if (!existingClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
+    if (existingClass.class_teacher && existingClass.class_teacher.toString() === advisorId) {
+      return res.status(409).json({ message: "Cố vấn đã được gán cho lớp này" });
+    }
+    existingClass.class_teacher = advisorId;
+    await existingClass.save();
+
+    res.status(200).json({
+      message: "Đã thêm cố vấn vào lớp",
+      class: existingClass,
+    });
+  } catch (error) {
+    console.error("[Add Advisor ERROR]", error.message);
+    res.status(500).json({ message: "Lỗi server khi thêm cố vấn" });
+  }
+};
+
+
 exports.getAllClasses = async (req, res) => {
   try {
-    const classes = await Class.find({}, 'class_id class_name class_member');
+    const classes = await Class.find({}, 'class_id class_name class_member class_teacher');
     res.status(200).json(classes);
   } catch (err) {
     console.error('Lỗi khi lấy danh sách lớp:', err.message);

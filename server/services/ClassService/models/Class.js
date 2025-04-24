@@ -5,7 +5,7 @@ const ClassSchema = new Schema(
     {
         class_name: { type: String, required: true },
         class_id: { type: String, required: true, unique: true },
-        class_teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'users' , required: true },
+        class_teacher: { type: mongoose.Schema.Types.ObjectId, ref: 'users' },
         class_member: [{ type: mongoose.Schema.Types.ObjectId, ref: 'users' }]
     },
     {

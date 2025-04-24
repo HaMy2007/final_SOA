@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useClass } from "../../context/ClassContext";
 import { mockListStudents } from "../../data/mockListStudent";
+import { useParams } from "react-router-dom";
+import axios from "axios";
+import Swal from 'sweetalert2';
 
 type Props = {};
 
@@ -9,10 +12,49 @@ const ClassDetail = (props: Props) => {
   const [newAdvisorEmail, setNewAdvisorEmail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredStudents, setFilteredStudents] = useState(mockListStudents);
+  const { classId } = useParams();
+  const [classInfo, setClassInfo] = useState<any>(null);
+  const [classAdvisor, setClassAdvisor] = useState<any>(null);
+  const [students, setStudents] = useState<any[]>([]);
 
-  const handleAddAdvisorClick = () => {
-    handleAddAdvisor(newAdvisorEmail);
-    setNewAdvisorEmail("");
+  const handleAddAdvisorClick = async () => {
+    if (!newAdvisorEmail) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Thiếu thông tin',
+        text: 'Vui lòng nhập email cố vấn',
+      });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(`http://localhost:4000/api/classes/${classId}/add-advisor`, {
+        email: newAdvisorEmail,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      );
+      setNewAdvisorEmail("");
+      // Cập nhật lại thông tin cố vấn từ server
+      const advisorRes = await axios.get(`http://localhost:4000/api/classes/${classId}/advisor`);
+      setClassAdvisor(advisorRes.data.advisor);
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Đã thêm cố vấn vào lớp!',
+      });
+    } catch (err: any) {
+      console.error("Lỗi khi thêm cố vấn:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Thêm thất bại',
+        text: err.response?.data?.message || 'Đã xảy ra lỗi khi thêm cố vấn',
+      });
+    }
   };
 
   const handleEditAdvisorClick = () => {
@@ -25,7 +67,7 @@ const ClassDetail = (props: Props) => {
   };
 
   useEffect(() => {
-    const result = mockListStudents.filter((student) => {
+    const result = students.filter((student) => {
       return (
         student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.tdt_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -33,12 +75,62 @@ const ClassDetail = (props: Props) => {
       );
     });
     setFilteredStudents(result);
-  }, [searchTerm]);
+  }, [searchTerm, students]);
 
+  useEffect(() => {
+    const fetchClass = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4000/api/${classId}`);
+        setClassInfo(res.data.class);
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu lớp:", error);
+      }
+    };
+  
+    fetchClass();
+  }, [classId]);
+
+  useEffect(() => {
+    const fetchAdvisor = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4000/api/classes/${classId}/advisor`);
+        setClassAdvisor(res.data.advisor);
+      } catch (err) {
+        console.error("Lỗi khi lấy thông tin cố vấn:", err);
+      }
+    };
+  
+    if (classId) {
+      fetchAdvisor();
+    }
+  }, [classId]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
+        const mappedStudents = res.data.students.map((student: any) => ({
+          ...student,
+          phoneNumber: student.phone_number,
+          parentPhoneNumber: student.parent_phone_number,
+          dateOfBirth: new Date(student.date_of_birth),
+        }));
+        setStudents(mappedStudents);
+        setFilteredStudents(mappedStudents); // cập nhật dữ liệu cho bộ lọc
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách sinh viên:", err);
+      }
+    };
+  
+    if (classId) {
+      fetchStudents();
+    }
+  }, [classId]);  
+  
   return (
     <div className="w-full h-full p-4 overflow-y-auto">
       <div className="w-9/12 mx-auto relative">
-        {!advisor ? (
+        {!classAdvisor ? (
           <div className="mb-4 flex gap-3">
             <input
               type="email"
@@ -56,11 +148,14 @@ const ClassDetail = (props: Props) => {
           </div>
         ) : (
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-bold">Cố vấn hiện tại: {advisor}</h3>
+            <div>
+              <h3 className="font-bold">Cố vấn hiện tại: {classAdvisor.name}</h3>
+              <p><strong>Email:</strong> {classAdvisor.email}</p>
+            </div>
             <div className="flex items-center gap-3">
               <input
                 placeholder="Tìm kiếm"
-                className="px-4 py-2 rounded-md mt-2"
+                className="px-4 py-2 rounded-md mt-2 border"
                 value={searchTerm}
                 onChange={handleSearchChange}
               />
@@ -68,11 +163,18 @@ const ClassDetail = (props: Props) => {
                 className="bg-blue-900 hover:bg-blue-950 cursor-pointer text-white px-4 py-2 rounded-md mt-2"
                 onClick={handleEditAdvisorClick}
               >
-                Chỉnh sửa cố vấn
+                Thay đổi cố vấn
               </button>
             </div>
           </div>
         )}
+        {classInfo && (
+          <div className="mb-6 bg-blue-50 p-4 rounded shadow">
+            <h2 className="text-xl font-bold">Thông tin lớp: {classInfo.class_name}</h2>
+            <p>Mã lớp: {classInfo.class_id}</p>
+          </div>
+        )}
+
         <table className="min-w-full border-collapse border border-gray-300 bg-white">
           <thead className="bg-gray-200">
             <tr>

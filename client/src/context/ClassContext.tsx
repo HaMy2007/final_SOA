@@ -1,5 +1,8 @@
 import { createContext, ReactNode, useContext, useState } from "react";
 import { ClassTypes } from "../types/class";
+import axios from "axios";
+import { useEffect } from "react";
+import Swal from "sweetalert2";
 
 type ClassContext = {
   classes: ClassTypes[];
@@ -28,8 +31,8 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
   const [studentClass, setStudentClass] = useState<ClassTypes>({
     class_id: "",
     class_name: "",
-    classTeacher: "",
-    classMember: [],
+    class_teacher: "",
+    class_member: [],
     updatedAt: new Date().toISOString(),
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -51,30 +54,50 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
     );
   };
 
-  const handleCreateClass = () => {
-    if (!studentClass?.class_name) {
+  const handleCreateClass = async () => {
+    if (!studentClass?.class_name.trim()) {
       setError("Tên lớp không được để trống!");
       return;
     }
     setError("");
 
-    const newClass: ClassTypes = {
-      id: generateRandomID(),
-      class_name: studentClass?.class_name,
-      classTeacher: "",
-      classMember: [],
-      updatedAt: new Date().toISOString(),
-      class_id: generateRandomID(),
-    };
-    handleAddClass(newClass);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post("http://localhost:4000/api/classes", {
+        class_name: studentClass.class_name.trim(),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      const createdClass = res.data.class; 
+  
+      handleAddClass(createdClass); 
+  
+      setStudentClass((prev) => ({
+        ...prev,
+        class_name: "",
+      }));
+      Swal.fire({
+        icon: "success",
+        title: "Thành công!",
+        text: "Lớp đã được tạo thành công!",
+      });
+      setIsFormVisible(false);
+    } catch (err: any) {
+      let msg = "Đã có lỗi xảy ra!";
+      if (err.response?.status === 409) {
+        msg = "Lớp đã tồn tại!";
+      }
 
-    setStudentClass((prev: ClassTypes) => ({
-      ...prev,
-      class_name: "",
-    }));
-
-    setError("");
-    setIsFormVisible(false);
+      Swal.fire({
+        icon: "error",
+        title: "Thất bại!",
+        text: msg,
+      });
+    }
   };
 
   const handleAddClass = (newClass: ClassTypes) => {
@@ -92,6 +115,19 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
     console.log("Chỉnh sửa cố vấn với email:", email);
     setNewAdvisorEmail("");
   };
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/classes"); // hoặc URL tương ứng
+        setClasses(res.data);
+      } catch (err) {
+        console.error("Lỗi khi fetch lớp học:", err);
+      }
+    };
+
+    fetchClasses();
+  }, []);
 
   return (
     <ClassContext.Provider

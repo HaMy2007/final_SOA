@@ -19,5 +19,7 @@ router.put("/classes/assign-teacher", classController.assignTeacherToClass);
 router.get("/classes/by-teacher/:teacherId", classController.getClassByTeacherId);
 router.put("/classes/:classId/remove-teacher", authenticateToken, authorizeRoles("admin"), classController.removeAdvisorFromClass);
 router.delete("/classes/remove-student-if-exists/:studentId", classController.adminDeleteStudentFromClass);
-  
+router.get("/:class_id", classController.getClassById);
+router.post('/classes/:classId/add-advisor', classController.addAdvisorToClass);
+
 module.exports = router;
