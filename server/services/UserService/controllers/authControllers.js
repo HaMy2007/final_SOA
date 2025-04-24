@@ -32,7 +32,9 @@ exports.login = async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
       );
-  
+      console.log("JWT_SECRET khi sign:", process.env.JWT_SECRET);
+      console.log("JWT khi tạo:", token);
+
       res.status(200).json({
         token,
         user: {
