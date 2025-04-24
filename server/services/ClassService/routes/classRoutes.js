@@ -21,5 +21,6 @@ router.put("/classes/:classId/remove-teacher", authenticateToken, authorizeRoles
 router.delete("/classes/remove-student-if-exists/:studentId", classController.adminDeleteStudentFromClass);
 router.get("/:class_id", classController.getClassById);
 router.post('/classes/:classId/add-advisor', classController.addAdvisorToClass);
+router.put("/classes/:classId/change-advisor", classController.changeAdvisorOfClass);
 
 module.exports = router;

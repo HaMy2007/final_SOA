@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useClass } from "../../context/ClassContext";
 import { mockListStudents } from "../../data/mockListStudent";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -8,7 +7,6 @@ import Swal from 'sweetalert2';
 type Props = {};
 
 const ClassDetail = (props: Props) => {
-  const { advisor, handleAddAdvisor, handleEditAdvisor } = useClass();
   const [newAdvisorEmail, setNewAdvisorEmail] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredStudents, setFilteredStudents] = useState(mockListStudents);
@@ -16,6 +14,7 @@ const ClassDetail = (props: Props) => {
   const [classInfo, setClassInfo] = useState<any>(null);
   const [classAdvisor, setClassAdvisor] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
 
   const handleAddAdvisorClick = async () => {
     if (!newAdvisorEmail) {
@@ -57,9 +56,45 @@ const ClassDetail = (props: Props) => {
     }
   };
 
-  const handleEditAdvisorClick = () => {
-    handleEditAdvisor(newAdvisorEmail);
-    setNewAdvisorEmail("");
+  const handleEditAdvisorClick = async () => {
+    if (!newAdvisorEmail) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Thiếu thông tin',
+        text: 'Vui lòng nhập email cố vấn mới',
+      });
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`http://localhost:4000/api/classes/${classId}/change-advisor`, {
+        email: newAdvisorEmail,
+      }, 
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      // Cập nhật lại cố vấn sau khi thay đổi
+      const advisorRes = await axios.get(`http://localhost:4000/api/classes/${classId}/advisor`);
+      setClassAdvisor(advisorRes.data.advisor);
+  
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: 'Đã thay đổi cố vấn cho lớp!',
+      });
+      setNewAdvisorEmail("");
+    } catch (err: any) {
+      console.error("Lỗi khi thay đổi cố vấn:", err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Thay đổi thất bại',
+        text: err.response?.data?.message || 'Đã xảy ra lỗi khi thay đổi cố vấn',
+      });
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,18 +188,47 @@ const ClassDetail = (props: Props) => {
               <p><strong>Email:</strong> {classAdvisor.email}</p>
             </div>
             <div className="flex items-center gap-3">
-              <input
-                placeholder="Tìm kiếm"
-                className="px-4 py-2 rounded-md mt-2 border"
-                value={searchTerm}
-                onChange={handleSearchChange}
-              />
-              <button
-                className="bg-blue-900 hover:bg-blue-950 cursor-pointer text-white px-4 py-2 rounded-md mt-2"
-                onClick={handleEditAdvisorClick}
-              >
-                Thay đổi cố vấn
-              </button>
+            {!isEditingAdvisor ? (
+              <>
+                <input
+                  placeholder="Tìm kiếm"
+                  className="px-4 py-2 rounded-md mt-2 border"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                />
+                <button
+                  className="bg-blue-900 hover:bg-blue-950 cursor-pointer text-white px-4 py-2 rounded-md mt-2"
+                  onClick={() => setIsEditingAdvisor(true)}
+                >
+                  Thay đổi cố vấn
+                </button>
+              </>
+              ) : (
+              <>
+                <input
+                  type="email"
+                  placeholder="Nhập email cố vấn mới"
+                  className="border p-2 rounded-md mt-2"
+                  value={newAdvisorEmail}
+                  onChange={(e) => setNewAdvisorEmail(e.target.value)}
+                />
+                <button
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md mt-2"
+                  onClick={handleEditAdvisorClick}
+                >
+                  Xác nhận thay đổi
+                </button>
+                <button
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md mt-2"
+                  onClick={() => {
+                    setIsEditingAdvisor(false);
+                    setNewAdvisorEmail("");
+                  }}
+                >
+                  Hủy
+                </button>
+              </>
+            )}
             </div>
           </div>
         )}
