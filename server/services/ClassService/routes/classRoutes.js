@@ -7,20 +7,20 @@ const { authenticateToken, authorizeRoles } = require("../../../middleware/auth"
 router.get('/classes/:id/students', classController.getClassStudents);
 router.get('/teachers/:id/class', classController.getClassesByTeacher);
 router.get('/students/:id/advisor', classController.getAdvisorOfStudent);
-router.post('/classes', classController.addClass);
+router.post('/classes', authenticateToken, authorizeRoles("admin"), classController.addClass);
 router.get('/class-size', classController.getClassSizeById);
-router.post('/classes/:classId/import-students', upload.single('file'), classController.importStudentsToClass);
+router.post('/classes/:classId/import-students', upload.single('file'), authenticateToken, authorizeRoles("advisor"), classController.importStudentsToClass);
 router.get('/students/:id/class', classController.getClassByStudentId);
 router.get('/classes/:classId/advisor', classController.getAdvisorByClassId);
-router.delete('/classes/:classId/remove-student/:userId', classController.removeStudentFromClass);
-router.post('/classes/:classId/add-student', classController.addStudentToClass);
+router.delete('/classes/:classId/remove-student/:userId', authenticateToken, authorizeRoles("advisor"), classController.removeStudentFromClass);
+router.post('/classes/:classId/add-student', authenticateToken, authorizeRoles("advisor"), classController.addStudentToClass);
 router.get("/classes", classController.getAllClasses);
 router.put("/classes/assign-teacher", classController.assignTeacherToClass);
 router.get("/classes/by-teacher/:teacherId", classController.getClassByTeacherId);
 router.put("/classes/:classId/remove-teacher", authenticateToken, authorizeRoles("admin"), classController.removeAdvisorFromClass);
-router.delete("/classes/remove-student-if-exists/:studentId", classController.adminDeleteStudentFromClass);
+router.delete("/classes/remove-student-if-exists/:studentId", authenticateToken, authorizeRoles("admin"), classController.adminDeleteStudentFromClass);
 router.get("/:class_id", classController.getClassById);
-router.post('/classes/:classId/add-advisor', classController.addAdvisorToClass);
-router.put("/classes/:classId/change-advisor", classController.changeAdvisorOfClass);
+router.post('/classes/:classId/add-advisor', authenticateToken, authorizeRoles("admin"), classController.addAdvisorToClass);
+router.put("/classes/:classId/change-advisor", authenticateToken, authorizeRoles("admin"), classController.changeAdvisorOfClass);
 
 module.exports = router;

@@ -299,6 +299,10 @@ exports.importStudentsToClass = async (req, res) => {
           return res.status(404).json({ message: "Không tìm thấy lớp học" });
         }
 
+        if (req.user.id !== targetClass.class_teacher.toString()) {
+          return res.status(403).json({ message: "Bạn không có quyền import sinh viên vào lớp này" });
+        }
+        
         const existingIds = new Set((targetClass.class_member || []).map(id => id.toString()));
         const alreadyInClass = [];
         const toAdd = [];
@@ -370,6 +374,10 @@ exports.addStudentToClass = async (req, res) => {
     const userId = userIds[0];
 
     const existingClass = await Class.findOne({ class_id: classId });
+
+    if (req.user.id !== existingClass.class_teacher.toString()) {
+      return res.status(403).json({ message: "Bạn không có quyền thêm sinh viên vào lớp này" });
+    }
 
     if (existingClass.class_member.includes(userId)) {
       return res.status(409).json({ message: "Sinh viên đã tồn tại trong lớp" });
@@ -460,7 +468,7 @@ exports.changeAdvisorOfClass = async (req, res) => {
     if (existingClass.class_teacher.toString() === advisorId) {
       return res.status(409).json({ message: "Đây đã là cố vấn hiện tại" });
     }
-    
+
     existingClass.class_teacher = advisorId;
     await existingClass.save();
 

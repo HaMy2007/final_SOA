@@ -87,12 +87,16 @@ exports.createPost = async (req, res) => {
 exports.addComment = async (req, res) => {
     try {
       const { postId } = req.params;
-      const { author_id, author_name, content } = req.body;
+      const user = req.user;
+      if (!user || !user.id) {
+        return res.status(401).json({ message: "chưa đăng nhập hoặc token không hợp lệ" });
+      }
+      const { content } = req.body;
   
       const newComment = new Comment({
         post_id: postId,
-        author_id,
-        author_name,
+        author_id: user.id,          
+        author_name: user.name,
         content,
       });
   
@@ -136,9 +140,14 @@ exports.toggleLike = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const { postId } = req.params;
+    const userId = req.user._id;
 
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: "Không tìm thấy bài viết" });
+
+    if (post.author_id.toString() !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Bạn không có quyền xóa bài viết này" });
+    }
 
     await Comment.deleteMany({ post_id: postId });
 
