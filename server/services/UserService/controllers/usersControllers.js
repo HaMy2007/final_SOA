@@ -28,6 +28,81 @@ exports.getAllStudents = async (req, res) => {
   res.json(students);
 };
 
+// exports.updateUserProfile = async (req, res) => {
+//   try {
+//     const userId = req.params.id;
+
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({ message: "ID người dùng không hợp lệ" });
+//     }
+
+//     const allowedFields = [
+//       "name",
+//       "phone_number",
+//       "parent_number",
+//       "address",
+//       "date_of_birth",
+//       "gender",
+//       "class_id",
+//     ];
+//     const updateData = {};
+
+//     allowedFields.forEach((field) => {
+//       if (req.body[field] !== undefined) {
+//         updateData[field] = req.body[field];
+//       }
+//     });
+
+//     if (Object.keys(updateData).length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Không có trường hợp lệ để cập nhật" });
+//     }
+
+//     const currentUser = await User.findById(userId);
+//     const oldClassId = currentUser?.class_id?.toString();
+
+//     const updatedUser = await User.findByIdAndUpdate(
+//       userId,
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedUser) {
+//       return res.status(404).json({ message: "Không tìm thấy người dùng" });
+//     }
+
+//     if ("class_id" in req.body) {
+//       if (req.body.class_id) {
+//         try {
+//           await axios.put("http://localhost:4000/api/classes/assign-teacher", {
+//             class_id: req.body.class_id,
+//             teacher_id: userId,
+//           });
+//         } catch (error) {
+//           console.error("Gán cố vấn thất bại:", error.message);
+//         }
+//       } else if (oldClassId){
+//         try {
+//           await axios.put(
+//             `http://localhost:4000/api/classes/${oldClassId}/remove-teacher`
+//           );
+//         } catch (error) {
+//           console.error("Gỡ cố vấn khỏi lớp thất bại:", error.message);
+//         }
+//       }
+//     }
+
+//     res.status(200).json({
+//       message: "Cập nhật thông tin thành công",
+//       user: updatedUser,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi khi cập nhật user:", error.message);
+//     res.status(500).json({ message: "Lỗi server" });
+//   }
+// };
+
 exports.updateUserProfile = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -43,6 +118,7 @@ exports.updateUserProfile = async (req, res) => {
       "address",
       "date_of_birth",
       "gender",
+      "class_id", // đây là mã lớp, không phải _id
     ];
     const updateData = {};
 
@@ -53,10 +129,11 @@ exports.updateUserProfile = async (req, res) => {
     });
 
     if (Object.keys(updateData).length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Không có trường hợp lệ để cập nhật" });
+      return res.status(400).json({ message: "Không có trường hợp lệ để cập nhật" });
     }
+
+    const currentUser = await User.findById(userId);
+    const oldClassCode = currentUser?.class_id;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -68,6 +145,37 @@ exports.updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
+    if ("class_id" in req.body) {
+      const newClassCode = req.body.class_id;
+
+      // Gỡ khỏi lớp cũ nếu có
+      if (oldClassCode) {
+        try {
+          // Truy vấn sang service lớp để tìm _id của lớp cũ theo class_id
+          const resOld = await axios.get(`http://localhost:4000/api/${oldClassCode}`);
+          const oldClassDocId = resOld.data.class._id;
+
+          await axios.put(
+            `http://localhost:4000/api/classes/${oldClassDocId}/remove-teacher`
+          );
+        } catch (error) {
+          console.error("Gỡ cố vấn khỏi lớp cũ thất bại:", error.message);
+        }
+      }
+
+      // Gán vào lớp mới nếu có
+      if (newClassCode) {
+        try {
+          await axios.put("http://localhost:4000/api/classes/assign-teacher", {
+            class_id: newClassCode, // mã lớp
+            teacher_id: userId,
+          });
+        } catch (error) {
+          console.error("Gán cố vấn vào lớp mới thất bại:", error.message);
+        }
+      }
+    }
+
     res.status(200).json({
       message: "Cập nhật thông tin thành công",
       user: updatedUser,
@@ -77,6 +185,7 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
 
 exports.getUserById = async (req, res) => {
   try {

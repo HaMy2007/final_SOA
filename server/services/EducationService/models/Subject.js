@@ -5,7 +5,6 @@ const SubjectSchema = new Schema(
     {
         subject_name: { type: String, required: true },
         subject_code: { type: String, required: true, unique: true },
-        credit: { type: Number, required: true }
     },
     {
         timestamps: true

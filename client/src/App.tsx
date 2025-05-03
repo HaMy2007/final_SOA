@@ -8,7 +8,7 @@ import AdvisorInfor from "./pages/admin/AdvisorInfo";
 import ClassDetail from "./pages/admin/ClassDetail";
 import ClassManagement from "./pages/admin/ClassManagement";
 import ChangePassword from "./pages/ChangePassword";
-import Dashboard from "./pages/Dashboard";
+import DepartmentManagement from "./pages/DepartmentManagement";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import Forum from "./pages/Forum";
 import Home from "./pages/Home";
@@ -55,7 +55,7 @@ const App = () => {
             path="studentDetail/:studentId"
             element={<StudentScoreDetail />}
           />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="department" element={<DepartmentManagement />} />
           <Route
             path="students"
             element={
@@ -96,7 +96,7 @@ const App = () => {
             }
           />
           <Route path="databaseManagement" element={<DatabaseManagement />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<DepartmentManagement />} />
           <Route path="studentScore" element={<StudentScoresList />} />
           <Route
             path="studentDetail/:studentId"

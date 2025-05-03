@@ -172,57 +172,82 @@ exports.getAdvisorOfStudent = async (req, res) => {
     }
 };
 
-const generateClassID = (class_name) => {
-  const match = class_name.match(/K(\d+)/i); 
-  let prefix = '00';
-
-  if (match && match[1]) {
-    const year = parseInt(match[1], 10); 
-    const base = year - 4;               
-    prefix = base.toString().padStart(2, '0'); 
-  }
-
-  const middle = '050'; 
-  const randomSuffix = Math.floor(100 + Math.random() * 900); 
-
-  return prefix + middle + randomSuffix.toString(); 
-};
-
+// exports.addClass = async (req, res) => {
+//     try {
+//       const { class_name } = req.body;
+  
+//       if (!class_name) {
+//         return res.status(400).json({ message: 'Thiếu class_name' });
+//       }
+  
+//       const class_id = generateClassID(class_name);
+//       const existing = await Class.findOne({ 
+//         $or: [
+//           { class_id },
+//           { class_name }  
+//         ]
+//       });
+//       if (existing) {
+//         return res.status(409).json({ message: 'Lớp đã tồn tại' });
+//       }
+  
+//       const newClass = new Class({
+//         class_id,
+//         class_name,
+//       });
+  
+//       await newClass.save();
+  
+//       res.status(201).json({
+//         message: 'Thêm lớp thành công',
+//         class: newClass
+//       });
+  
+//     } catch (err) {
+//       console.error('Lỗi khi thêm lớp:', err.message);
+//       res.status(500).json({ message: 'Lỗi server' });
+//     }
+// };
 exports.addClass = async (req, res) => {
-    try {
-      const { class_name } = req.body;
-  
-      if (!class_name) {
-        return res.status(400).json({ message: 'Thiếu class_name' });
-      }
-  
-      const class_id = generateClassID(class_name);
-      const existing = await Class.findOne({ 
-        $or: [
-          { class_id },
-          { class_name }  
-        ]
-      });
-      if (existing) {
-        return res.status(409).json({ message: 'Lớp đã tồn tại' });
-      }
-  
-      const newClass = new Class({
-        class_id,
-        class_name,
-      });
-  
-      await newClass.save();
-  
-      res.status(201).json({
-        message: 'Thêm lớp thành công',
-        class: newClass
-      });
-  
-    } catch (err) {
-      console.error('Lỗi khi thêm lớp:', err.message);
-      res.status(500).json({ message: 'Lỗi server' });
+  try {
+    const { class_id } = req.body;
+
+    if (!class_id) {
+      return res.status(400).json({ message: 'Thiếu class_id' });
     }
+
+    // Tự động gán class_name dựa theo class_id
+    let class_name = 'Không rõ';
+    if (class_id.includes('12')) {
+      class_name = 'Khối 12';
+    } else if (class_id.includes('11')) {
+      class_name = 'Khối 11';
+    } else if (class_id.includes('10')) {
+      class_name = 'Khối 10';
+    }
+
+    // Kiểm tra trùng lặp class_id
+    const existing = await Class.findOne({ class_id });
+    if (existing) {
+      return res.status(409).json({ message: 'Lớp đã tồn tại' });
+    }
+
+    const newClass = new Class({
+      class_id,
+      class_name
+    });
+
+    await newClass.save();
+
+    res.status(201).json({
+      message: 'Thêm lớp thành công',
+      class: newClass
+    });
+
+  } catch (err) {
+    console.error('Lỗi khi thêm lớp:', err.message);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
 };
 
 exports.getClassById = async (req, res) => {

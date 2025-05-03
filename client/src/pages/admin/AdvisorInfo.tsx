@@ -177,7 +177,7 @@ const AdvisorInfor = () => {
                   placeholder="Lớp cố vấn dạy"
                   value={newAdvisor.class_id}
                   onChange={handleInputChange}
-                  required
+                  // required
                   className="border rounded-md px-2 mb-4 w-full py-2"
                 />
                 <select
