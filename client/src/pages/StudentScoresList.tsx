@@ -344,8 +344,7 @@ const StudentScoresList = () => {
               <th className="py-3 px-4 text-left">Mã định danh</th>
               <th className="py-3 px-4 text-left">Trạng thái</th>
               <th className="py-3 px-4 text-left">Ngày sinh</th>
-              <th className="py-3 px-4 text-left">TBCTL</th>
-              <th className="py-3 px-4 text-center">Chi tiết</th>
+              <th className="py-3 px-4 text-center">Chi tiết điểm</th>
             </tr>
           </thead>
           <tbody>
@@ -375,11 +374,6 @@ const StudentScoresList = () => {
                 </td>
                 <td className="py-3 px-4">
                   {new Date(student.date_of_birth).toLocaleDateString("vi-VN")}
-                </td>
-                <td className="py-3 px-4">
-                  {typeof student.gpa === "number"
-                    ? student.gpa.toFixed(2)
-                    : "-"}
                 </td>
                 <td className="py-3 px-4 text-center">
                   <button

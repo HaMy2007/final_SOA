@@ -93,7 +93,7 @@ const PersonalScore = () => {
             <strong>Mã định danh:</strong> {userDetail.tdt_id}
           </p>
           <p className="text-sm mb-1">
-            <strong>GPA:</strong> {gpa.toFixed(2)}
+            <strong>DTB:</strong> {gpa.toFixed(2)}
           </p>
           <p className="text-sm mb-4">
             <strong>Xếp loại:</strong> {status}
