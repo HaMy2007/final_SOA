@@ -1,6 +1,6 @@
 const Class = require("../models/Class");
-const mongoose = require('mongoose');
-const axios = require('axios');
+const mongoose = require("mongoose");
+const axios = require("axios");
 const fs = require("fs");
 const csv = require("csv-parser");
 
@@ -10,7 +10,9 @@ exports.getClassStudents = async (req, res) => {
 
     const classDoc = await Class.findOne({ class_id: classId });
     if (!classDoc) {
-      return res.status(404).json({ message: `Không tìm thấy lớp với mã ${classId}` });
+      return res
+        .status(404)
+        .json({ message: `Không tìm thấy lớp với mã ${classId}` });
     }
 
     const studentIds = classDoc.class_member;
@@ -18,7 +20,7 @@ exports.getClassStudents = async (req, res) => {
       return res.status(200).json({
         class_id: classDoc.class_id,
         class_name: classDoc.class_name,
-        students: []
+        students: [],
       });
     }
 
@@ -33,11 +35,12 @@ exports.getClassStudents = async (req, res) => {
       students: response.data, // nên đảm bảo response.data là mảng user
     });
   } catch (error) {
-    console.error("Lỗi khi lấy sinh viên lớp:", error.message);
-    res.status(500).json({ message: "Lỗi server hoặc gọi user service thất bại" });
+    console.error("Lỗi khi lấy học sinh lớp:", error.message);
+    res
+      .status(500)
+      .json({ message: "Lỗi server hoặc gọi user service thất bại" });
   }
 };
-
 
 exports.getAdvisorByClassId = async (req, res) => {
   try {
@@ -50,10 +53,12 @@ exports.getAdvisorByClassId = async (req, res) => {
 
     const advisorId = classDoc.class_teacher;
     if (!advisorId) {
-      return res.status(404).json({ message: "Lớp này chưa có cố vấn" });
+      return res.status(404).json({ message: "Lớp này chưa có giáo viên" });
     }
 
-    const advisorRes = await axios.get(`http://localhost:4003/api/users/${advisorId}`);
+    const advisorRes = await axios.get(
+      `http://localhost:4003/api/users/${advisorId}`
+    );
     const advisor = advisorRes.data;
 
     res.status(200).json({
@@ -67,35 +72,37 @@ exports.getAdvisorByClassId = async (req, res) => {
       },
     });
   } catch (error) {
-    // console.error("[ClassService] Lỗi lấy thông tin cố vấn:", error.message);
+    // console.error("[ClassService] Lỗi lấy thông tin giáo viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
 
 exports.getClassesByTeacher = async (req, res) => {
-    try {
-        const teacherId = req.params.id;
+  try {
+    const teacherId = req.params.id;
 
-        if (!mongoose.Types.ObjectId.isValid(teacherId)) {
-            return res.status(400).json({ message: 'ID giáo viên không hợp lệ' });
-        }
-
-        const classDoc = await Class.findOne({ class_teacher: teacherId });
-        if (!classDoc) {
-          return res.status(404).json({ message: 'Không tìm thấy lớp của cố vấn' });
-        }
-
-        res.status(200).json({
-            class: {
-              class_id: classDoc.class_id,
-              class_name: classDoc.class_name,
-              students: classDoc.class_member
-            },
-        });
-    } catch (error) {
-        console.error('Lỗi khi lấy danh sách lớp của giáo viên:', error.message);
-        res.status(500).json({ message: 'Lỗi server' });
+    if (!mongoose.Types.ObjectId.isValid(teacherId)) {
+      return res.status(400).json({ message: "ID giáo viên không hợp lệ" });
     }
+
+    const classDoc = await Class.findOne({ class_teacher: teacherId });
+    if (!classDoc) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy lớp của giáo viên" });
+    }
+
+    res.status(200).json({
+      class: {
+        class_id: classDoc.class_id,
+        class_name: classDoc.class_name,
+        students: classDoc.class_member,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách lớp của giáo viên:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
 };
 
 exports.getClassByStudentId = async (req, res) => {
@@ -104,15 +111,19 @@ exports.getClassByStudentId = async (req, res) => {
 
     const foundClass = await Class.findOne({ class_member: userId });
     if (!foundClass) {
-      return res.status(404).json({ message: "Không tìm thấy lớp học của sinh viên này" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy lớp học của học sinh này" });
     }
 
-    res.status(200).json({ class: {
-      class_id: foundClass.class_id,
-      class_name: foundClass.class_name
-    }});
+    res.status(200).json({
+      class: {
+        class_id: foundClass.class_id,
+        class_name: foundClass.class_name,
+      },
+    });
   } catch (err) {
-    console.error("Lỗi tìm lớp theo sinh viên:", err.message);
+    console.error("Lỗi tìm lớp theo học sinh:", err.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -123,86 +134,96 @@ exports.removeAdvisorFromClass = async (req, res) => {
     { $unset: { class_teacher: "" } },
     { new: true }
   );
-  res.json({ message: "Đã gỡ cố vấn khỏi lớp", class: updated });
+  res.json({ message: "Đã gỡ giáo viên khỏi lớp", class: updated });
 };
 
 exports.getClassByTeacherId = async (req, res) => {
-  const classFound = await Class.findOne({ class_teacher: req.params.teacherId });
-  if (!classFound) return res.status(404).json({ message: "Không tìm thấy lớp có cố vấn này" });
+  const classFound = await Class.findOne({
+    class_teacher: req.params.teacherId,
+  });
+  if (!classFound)
+    return res
+      .status(404)
+      .json({ message: "Không tìm thấy lớp có giáo viên này" });
   res.json(classFound);
 };
 
 exports.getAdvisorOfStudent = async (req, res) => {
-    try {
-      const studentId = req.params.id;
-  
-      if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ message: 'ID sinh viên không hợp lệ' });
-      }
-  
-      const classDoc = await Class.findOne({ class_member: studentId });
-  
-      if (!classDoc) {
-        return res.status(404).json({ message: 'Không tìm thấy lớp chứa sinh viên này' });
-      }
-  
-      const advisorId = classDoc.class_teacher;
-  
-      const advisorResponse = await axios.get(`http://localhost:4003/api/users/${advisorId}`);
-      const advisor = advisorResponse.data;
-  
-      res.status(200).json({
-        class: {
-          id: classDoc.class_id,
-          name: classDoc.class_name,
-        },
-        advisor: {
-          id: advisor._id,
-          name: advisor.name,
-          email: advisor.email,
-          role: advisor.role,
-          phone_number: advisor.phone_number,
-          address: advisor.address,
-        },
-      });
-  
-    } catch (error) {
-      console.error('Lỗi khi lấy thông tin cố vấn:', error.message);
-      res.status(500).json({ message: 'Lỗi server hoặc kết nối đến UserService thất bại' });
+  try {
+    const studentId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "ID học sinh không hợp lệ" });
     }
+
+    const classDoc = await Class.findOne({ class_member: studentId });
+
+    if (!classDoc) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy lớp chứa học sinh này" });
+    }
+
+    const advisorId = classDoc.class_teacher;
+
+    const advisorResponse = await axios.get(
+      `http://localhost:4003/api/users/${advisorId}`
+    );
+    const advisor = advisorResponse.data;
+
+    res.status(200).json({
+      class: {
+        id: classDoc.class_id,
+        name: classDoc.class_name,
+      },
+      advisor: {
+        id: advisor._id,
+        name: advisor.name,
+        email: advisor.email,
+        role: advisor.role,
+        phone_number: advisor.phone_number,
+        address: advisor.address,
+      },
+    });
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin giáo viên:", error.message);
+    res
+      .status(500)
+      .json({ message: "Lỗi server hoặc kết nối đến UserService thất bại" });
+  }
 };
 
 // exports.addClass = async (req, res) => {
 //     try {
 //       const { class_name } = req.body;
-  
+
 //       if (!class_name) {
 //         return res.status(400).json({ message: 'Thiếu class_name' });
 //       }
-  
+
 //       const class_id = generateClassID(class_name);
-//       const existing = await Class.findOne({ 
+//       const existing = await Class.findOne({
 //         $or: [
 //           { class_id },
-//           { class_name }  
+//           { class_name }
 //         ]
 //       });
 //       if (existing) {
 //         return res.status(409).json({ message: 'Lớp đã tồn tại' });
 //       }
-  
+
 //       const newClass = new Class({
 //         class_id,
 //         class_name,
 //       });
-  
+
 //       await newClass.save();
-  
+
 //       res.status(201).json({
 //         message: 'Thêm lớp thành công',
 //         class: newClass
 //       });
-  
+
 //     } catch (err) {
 //       console.error('Lỗi khi thêm lớp:', err.message);
 //       res.status(500).json({ message: 'Lỗi server' });
@@ -213,40 +234,39 @@ exports.addClass = async (req, res) => {
     const { class_id } = req.body;
 
     if (!class_id) {
-      return res.status(400).json({ message: 'Thiếu class_id' });
+      return res.status(400).json({ message: "Thiếu class_id" });
     }
 
     // Tự động gán class_name dựa theo class_id
-    let class_name = 'Không rõ';
-    if (class_id.includes('12')) {
-      class_name = 'Khối 12';
-    } else if (class_id.includes('11')) {
-      class_name = 'Khối 11';
-    } else if (class_id.includes('10')) {
-      class_name = 'Khối 10';
+    let class_name = "Không rõ";
+    if (class_id.includes("12")) {
+      class_name = "Khối 12";
+    } else if (class_id.includes("11")) {
+      class_name = "Khối 11";
+    } else if (class_id.includes("10")) {
+      class_name = "Khối 10";
     }
 
     // Kiểm tra trùng lặp class_id
     const existing = await Class.findOne({ class_id });
     if (existing) {
-      return res.status(409).json({ message: 'Lớp đã tồn tại' });
+      return res.status(409).json({ message: "Lớp đã tồn tại" });
     }
 
     const newClass = new Class({
       class_id,
-      class_name
+      class_name,
     });
 
     await newClass.save();
 
     res.status(201).json({
-      message: 'Thêm lớp thành công',
-      class: newClass
+      message: "Thêm lớp thành công",
+      class: newClass,
     });
-
   } catch (err) {
-    console.error('Lỗi khi thêm lớp:', err.message);
-    res.status(500).json({ message: 'Lỗi server' });
+    console.error("Lỗi khi thêm lớp:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -267,19 +287,20 @@ exports.getClassById = async (req, res) => {
   }
 };
 
-  
 exports.getClassSizeById = async (req, res) => {
   try {
     const { class_id } = req.query;
 
     if (!class_id) {
-      return res.status(400).json({ message: 'Thiếu class_id' });
+      return res.status(400).json({ message: "Thiếu class_id" });
     }
 
     const classDoc = await Class.findOne({ class_id });
 
     if (!classDoc) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp với class_id đã cho' });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy lớp với class_id đã cho" });
     }
 
     const totalStudents = classDoc.class_member.length;
@@ -287,18 +308,19 @@ exports.getClassSizeById = async (req, res) => {
     res.status(200).json({
       class_id: classDoc.class_id,
       class_name: classDoc.class_name,
-      totalStudents
+      totalStudents,
     });
   } catch (error) {
-    console.error('[ClassService LỖI] [Lỗi lấy sĩ số lớp]:', error.message);
-    res.status(500).json({ message: 'Lỗi server' });
+    console.error("[ClassService LỖI] [Lỗi lấy sĩ số lớp]:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
 exports.importStudentsToClass = async (req, res) => {
   try {
     const { classId } = req.params;
-    if (!req.file) return res.status(400).json({ message: 'Vui lòng tải lên file CSV' });
+    if (!req.file)
+      return res.status(400).json({ message: "Vui lòng tải lên file CSV" });
 
     const emails = [];
 
@@ -308,16 +330,22 @@ exports.importStudentsToClass = async (req, res) => {
         if (row.email) emails.push(row.email.trim());
       })
       .on("end", async () => {
-        if (emails.length === 0) return res.status(400).json({ message: "File không có email nào" });
+        if (emails.length === 0)
+          return res.status(400).json({ message: "File không có email nào" });
 
         // Gửi sang UserService để lấy danh sách _id
-        const userRes = await axios.post("http://localhost:4003/api/users/get-ids-by-emails", {
-          emails
-        });
+        const userRes = await axios.post(
+          "http://localhost:4003/api/users/get-ids-by-emails",
+          {
+            emails,
+          }
+        );
 
         const userIds = userRes.data.userIds;
         if (!Array.isArray(userIds) || userIds.length === 0)
-          return res.status(400).json({ message: "Không tìm thấy sinh viên nào từ danh sách email" });
+          return res.status(400).json({
+            message: "Không tìm thấy học sinh nào từ danh sách email",
+          });
 
         const targetClass = await Class.findOne({ class_id: classId });
         if (!targetClass) {
@@ -325,10 +353,14 @@ exports.importStudentsToClass = async (req, res) => {
         }
 
         if (req.user.id !== targetClass.class_teacher.toString()) {
-          return res.status(403).json({ message: "Bạn không có quyền import sinh viên vào lớp này" });
+          return res.status(403).json({
+            message: "Bạn không có quyền import học sinh vào lớp này",
+          });
         }
-        
-        const existingIds = new Set((targetClass.class_member || []).map(id => id.toString()));
+
+        const existingIds = new Set(
+          (targetClass.class_member || []).map((id) => id.toString())
+        );
         const alreadyInClass = [];
         const toAdd = [];
 
@@ -344,13 +376,13 @@ exports.importStudentsToClass = async (req, res) => {
           { class_id: classId }, // tìm theo class_id thay vì _id
           { $addToSet: { class_member: { $each: userIds } } },
           { new: true }
-        );        
+        );
 
         res.status(200).json({
-          message: `Đã thêm ${userIds.length} sinh viên vào lớp`,
+          message: `Đã thêm ${userIds.length} học sinh vào lớp`,
           addedCount: toAdd.length,
           alreadyInClass,
-          updatedClass
+          updatedClass,
         });
       });
   } catch (error) {
@@ -364,19 +396,21 @@ exports.removeStudentFromClass = async (req, res) => {
     const { classId, userId } = req.params;
 
     const updatedClass = await Class.findOneAndUpdate(
-      { class_id: classId }, 
+      { class_id: classId },
       { $pull: { class_member: userId } }, // phải là class_member
       { new: true }
     );
 
     if (!updatedClass) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp học' });
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
     }
 
-    res.status(200).json({ message: 'Đã xoá sinh viên khỏi lớp', class: updatedClass });
+    res
+      .status(200)
+      .json({ message: "Đã xoá học sinh khỏi lớp", class: updatedClass });
   } catch (error) {
-    console.error('Lỗi khi xoá sinh viên khỏi lớp:', error.message);
-    res.status(500).json({ message: 'Lỗi server' });
+    console.error("Lỗi khi xoá học sinh khỏi lớp:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -388,12 +422,14 @@ exports.addStudentToClass = async (req, res) => {
     // Gọi sang UserService để lấy userId từ email
     const userServiceURL = "http://localhost:4003/api/users/get-ids-by-emails";
     const userResponse = await axios.post(userServiceURL, {
-      emails: [email]
+      emails: [email],
     });
 
     const userIds = userResponse.data.userIds;
     if (userIds.length === 0) {
-      return res.status(404).json({ message: "Email không tồn tại trong hệ thống" });
+      return res
+        .status(404)
+        .json({ message: "Email không tồn tại trong hệ thống" });
     }
 
     const userId = userIds[0];
@@ -401,13 +437,15 @@ exports.addStudentToClass = async (req, res) => {
     const existingClass = await Class.findOne({ class_id: classId });
 
     if (req.user.id !== existingClass.class_teacher.toString()) {
-      return res.status(403).json({ message: "Bạn không có quyền thêm sinh viên vào lớp này" });
+      return res
+        .status(403)
+        .json({ message: "Bạn không có quyền thêm học sinh vào lớp này" });
     }
 
     if (existingClass.class_member.includes(userId)) {
-      return res.status(409).json({ message: "Sinh viên đã tồn tại trong lớp" });
+      return res.status(409).json({ message: "Học sinh đã tồn tại trong lớp" });
     }
-    
+
     // Thêm userId vào class_member nếu chưa có
     const updatedClass = await Class.findOneAndUpdate(
       { class_id: classId },
@@ -420,8 +458,8 @@ exports.addStudentToClass = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Đã thêm sinh viên vào lớp",
-      class: updatedClass
+      message: "Đã thêm học sinh vào lớp",
+      class: updatedClass,
     });
   } catch (error) {
     console.error("[Add Student ERROR]", error.message);
@@ -441,7 +479,9 @@ exports.addAdvisorToClass = async (req, res) => {
 
     const userIds = userResponse.data.userIds;
     if (!userIds || userIds.length === 0) {
-      return res.status(404).json({ message: "Email cố vấn không tồn tại trong hệ thống" });
+      return res
+        .status(404)
+        .json({ message: "Email giáo viên không tồn tại trong hệ thống" });
     }
 
     const advisorId = userIds[0];
@@ -452,19 +492,24 @@ exports.addAdvisorToClass = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy lớp học" });
     }
 
-    if (existingClass.class_teacher && existingClass.class_teacher.toString() === advisorId) {
-      return res.status(409).json({ message: "Cố vấn đã được gán cho lớp này" });
+    if (
+      existingClass.class_teacher &&
+      existingClass.class_teacher.toString() === advisorId
+    ) {
+      return res
+        .status(409)
+        .json({ message: "giáo viên đã được gán cho lớp này" });
     }
     existingClass.class_teacher = advisorId;
     await existingClass.save();
 
     res.status(200).json({
-      message: "Đã thêm cố vấn vào lớp",
+      message: "Đã thêm giáo viên vào lớp",
       class: existingClass,
     });
   } catch (error) {
     console.error("[Add Advisor ERROR]", error.message);
-    res.status(500).json({ message: "Lỗi server khi thêm cố vấn" });
+    res.status(500).json({ message: "Lỗi server khi thêm giáo viên" });
   }
 };
 
@@ -480,7 +525,9 @@ exports.changeAdvisorOfClass = async (req, res) => {
 
     const userIds = userResponse.data.userIds;
     if (!userIds || userIds.length === 0) {
-      return res.status(404).json({ message: "Email cố vấn không tồn tại trong hệ thống" });
+      return res
+        .status(404)
+        .json({ message: "Email giáo viên không tồn tại trong hệ thống" });
     }
 
     const advisorId = userIds[0];
@@ -491,29 +538,32 @@ exports.changeAdvisorOfClass = async (req, res) => {
     }
 
     if (existingClass.class_teacher.toString() === advisorId) {
-      return res.status(409).json({ message: "Đây đã là cố vấn hiện tại" });
+      return res.status(409).json({ message: "Đây đã là giáo viên hiện tại" });
     }
 
     existingClass.class_teacher = advisorId;
     await existingClass.save();
 
     res.status(200).json({
-      message: "Đã cập nhật cố vấn lớp thành công",
+      message: "Đã cập nhật giáo viên lớp thành công",
       class: existingClass,
     });
   } catch (error) {
     console.error("[Edit Advisor ERROR]", error.message);
-    res.status(500).json({ message: "Lỗi server khi cập nhật cố vấn" });
+    res.status(500).json({ message: "Lỗi server khi cập nhật giáo viên" });
   }
 };
 
 exports.getAllClasses = async (req, res) => {
   try {
-    const classes = await Class.find({}, 'class_id class_name class_member class_teacher');
+    const classes = await Class.find(
+      {},
+      "class_id class_name class_member class_teacher"
+    );
     res.status(200).json(classes);
   } catch (err) {
-    console.error('Lỗi khi lấy danh sách lớp:', err.message);
-    res.status(500).json({ message: 'Lỗi server' });
+    console.error("Lỗi khi lấy danh sách lớp:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };
 
@@ -532,12 +582,12 @@ exports.assignTeacherToClass = async (req, res) => {
     }
 
     res.status(200).json({
-      message: "Gán cố vấn cho lớp thành công",
-      class: updated
+      message: "Gán giáo viên cho lớp thành công",
+      class: updated,
     });
   } catch (error) {
-    console.error("Lỗi khi gán cố vấn:", error.message);
-    res.status(500).json({ message: "Lỗi server khi gán cố vấn cho lớp" });
+    console.error("Lỗi khi gán giáo viên:", error.message);
+    res.status(500).json({ message: "Lỗi server khi gán giáo viên cho lớp" });
   }
 };
 
@@ -547,14 +597,20 @@ exports.adminDeleteStudentFromClass = async (req, res) => {
   try {
     const classDoc = await Class.findOne({ class_member: studentId });
 
-    if (!classDoc) return res.status(200).json({ message: "Sinh viên không thuộc lớp nào" });
+    if (!classDoc)
+      return res.status(200).json({ message: "Học sinh không thuộc lớp nào" });
 
-    classDoc.class_member = classDoc.class_member.filter(id => id.toString() !== studentId);
+    classDoc.class_member = classDoc.class_member.filter(
+      (id) => id.toString() !== studentId
+    );
     await classDoc.save();
 
-    res.status(200).json({ message: "Đã xoá sinh viên khỏi lớp", classId: classDoc.class_id });
+    res.status(200).json({
+      message: "Đã xoá học sinh khỏi lớp",
+      classId: classDoc.class_id,
+    });
   } catch (error) {
-    console.error("Lỗi khi xóa sinh viên khỏi lớp:", error.message);
-    res.status(500).json({ message: "Không thể xóa sinh viên khỏi lớp" });
+    console.error("Lỗi khi xóa học sinh khỏi lớp:", error.message);
+    res.status(500).json({ message: "Không thể xóa học sinh khỏi lớp" });
   }
 };
