@@ -168,6 +168,7 @@ exports.getStudentScoresBySemester = async (req, res) => {
 >>>>>>> Stashed changes
         name: sub.subject_name,
         code: sub.subject_code
+        code: sub.subject_code
       };
     });
 
@@ -228,6 +229,7 @@ exports.getStudentScoresBySemester = async (req, res) => {
       scores: result,
 >>>>>>> Stashed changes
     });
+
 
   } catch (error) {
     console.error("Lỗi khi lấy điểm theo học kỳ:", error.message);
@@ -439,6 +441,7 @@ exports.importStudentScores = async (req, res) => {
       const session = await mongoose.startSession();
       session.startTransaction();
       let committed = false;
+      let committed = false;
       try {
         for (const row of records) {
           try {
@@ -523,6 +526,7 @@ exports.importStudentScores = async (req, res) => {
 
             // Create and save new score
             const newScore = new Score({
+              user_id: user._id,
               user_id: user._id,
               score: parseFloat(score),
               category: normalizedCategory,
