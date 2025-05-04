@@ -10,9 +10,9 @@ const PersonalScore = () => {
   const [semesters, setSemesters] = useState<any[]>([]);
   const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");
   const [grades, setGrades] = useState<any[]>([]);
-  const [totalCredits, setTotalCredits] = useState(0);
   const [gpa, setGpa] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     const fetchUserAndSemesters = async () => {
@@ -40,6 +40,9 @@ const PersonalScore = () => {
         }));
 
         setSemesters(formatted);
+        if (formatted.length > 0) {
+          setSelectedSemesterId(formatted[0].id);
+        }
       } catch (err) {
         console.error("Lỗi khi tải thông tin user hoặc học kỳ:", err);
       }
@@ -67,7 +70,7 @@ const PersonalScore = () => {
         );
 
         setGrades(res.data.scores);
-        setTotalCredits(res.data.total_credits);
+        setStatus(res.data.status || "");
         setGpa(parseFloat(res.data.gpa));
       } catch (err) {
         console.error("Lỗi khi tải bảng điểm:", err);
@@ -92,18 +95,12 @@ const PersonalScore = () => {
           <p className="text-sm mb-1">
             <strong>GPA:</strong> {gpa.toFixed(2)}
           </p>
-          {/* <p className="text-sm mb-1">
-            <strong>Số tín chỉ:</strong> {totalCredits}
-          </p> */}
           <p className="text-sm mb-4">
-            <strong>Trạng thái:</strong> Bình thường
+            <strong>Xếp loại:</strong> {status}
           </p>
           <p className="text-xs text-gray-500 mb-3">
             Nhấn nút lọc ở cột <strong>Kì học</strong> để xem chi tiết từng kì
           </p>
-          {/* <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm">
-            Xem điểm hệ 4
-          </button> */}
         </div>
 
         <div className="w-full md:w-2/3">
@@ -116,8 +113,7 @@ const PersonalScore = () => {
                 <th className="p-3 text-center">Điểm 1 tiết</th>
                 <th className="p-3 text-center">Điểm giữa kỳ</th>
                 <th className="p-3 text-center">Điểm cuối kỳ</th>
-                {/* <th className="p-3 text-center">Điểm hệ 10</th> */}
-                {/* <th className="p-3 text-left">Kì học</th> */}
+                <th className="p-3 text-center">Điểm trung bình</th>
                 <th className="p-3 text-left">
                   <div className="flex flex-col">
                     <span>Kì học</span>
@@ -126,7 +122,6 @@ const PersonalScore = () => {
                       value={selectedSemesterId}
                       onChange={(e) => setSelectedSemesterId(e.target.value)}
                     >
-                      <option value="all">Tất cả</option>
                       {semesters.map((semester) => (
                         <option key={semester.id} value={semester.id}>
                           {semester.name}
@@ -147,10 +142,10 @@ const PersonalScore = () => {
                     {grade.score_1tiet ?? "-"}
                   </td>
                   <td className="p-3 text-center">
-                    {grade.score_giua_ky ?? "-"}
+                    {grade.score_giuaky ?? "-"}
                   </td>
                   <td className="p-3 text-center">
-                    {grade.score_cuoi_ky ?? "-"}
+                    {grade.score_cuoiky ?? "-"}
                   </td>
                   <td className="p-3 text-center">{grade.score ?? "-"}</td>
                   <td className="p-3">
@@ -162,7 +157,6 @@ const PersonalScore = () => {
                 <td className="p-3" colSpan={2}>
                   Tổng kết
                 </td>
-                <td className="p-3 text-center">{totalCredits}</td>
                 <td className="p-3 text-center">{gpa.toFixed(2)}</td>
                 <td className="p-3"></td>
               </tr>
