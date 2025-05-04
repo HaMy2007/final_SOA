@@ -104,7 +104,7 @@ const Home = () => {
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
               Chào mừng <strong>{userDetail.name}</strong> đến với ứng dụng quản
-              lý sinh viên - cố vấn học tập!
+              lý học sinh - giáo viên!
             </h1>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-9 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
@@ -149,13 +149,13 @@ const Home = () => {
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Cố vấn học tập và theo dõi điểm
+              Giáo viên và theo dõi điểm
             </h1>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-9 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
                 {advisor ? (
                   <div className="flex flex-col gap-8">
-                    <h2 className="text-xl font-bold">Thông tin cố vấn</h2>
+                    <h2 className="text-xl font-bold">Thông tin giáo viên</h2>
                     <div className="flex flex-col">
                       <p className="font-bold text-xl">Họ và tên</p>
                       <p className="text-xl">{advisor.name}</p>
@@ -164,7 +164,7 @@ const Home = () => {
                       <p className="font-bold text-xl">Vai trò</p>
                       <p className="text-xl">
                         {advisor.role === "advisor"
-                          ? "Cố vấn học tập"
+                          ? "giáo viên học tập"
                           : "Không xác định"}
                       </p>
                     </div>
@@ -183,7 +183,7 @@ const Home = () => {
                   </div>
                 ) : (
                   <p className="text-red-500">
-                    Không tìm thấy thông tin cố vấn.
+                    Không tìm thấy thông tin giáo viên.
                   </p>
                 )}
               </div>
@@ -219,8 +219,8 @@ const Home = () => {
         <div className="flex flex-col w-9/12 mx-auto">
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
-              Chào mừng {userDetail.name} đến với ứng dụng quản lý sinh viên -
-              cố vấn học tập!
+              Chào mừng {userDetail.name} đến với ứng dụng quản lý học sinh -
+              giáo viên!
             </h1>
             <div className="grid grid-cols-12 gap-4 bg-white rounded-lg shadow-xl relative">
               <div className="col-span-10 p-4   flex flex-col gap-3">
@@ -256,14 +256,14 @@ const Home = () => {
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <SiInformatica className="w-12 h-12 text-black-400" />
-                <span className="ml-2 text-xl">Thông tin cố vấn</span>
+                <span className="ml-2 text-xl">Thông tin giáo viên</span>
               </Link>
               <Link
                 to={`/${role}/students`}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
-                <span className="ml-2 text-xl">Thông tin sinh viên</span>
+                <span className="ml-2 text-xl">Thông tin học sinh</span>
               </Link>
               <Link
                 to={`/${role}/studentScore`}
@@ -311,7 +311,7 @@ const Home = () => {
           <div className="flex flex-col gap-3">
             <h1 className="text-2xl text-blue-950 font-semibold">
               Chào mừng <strong>{userDetail.name}</strong> đến với ứng dụng quản
-              lý sinh viên - cố vấn học tập!
+              lý học sinh - giáo viên!
             </h1>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 p-4 bg-white rounded-lg shadow-xl flex flex-col gap-3">
@@ -323,7 +323,7 @@ const Home = () => {
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Vai trò</p>
-                    <p className="text-xl">Cố vấn học tập</p>
+                    <p className="text-xl">Giáo viên</p>
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Lớp hiện tại</p>
@@ -353,7 +353,7 @@ const Home = () => {
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
-                <span className="ml-2 text-xl">Thông tin sinh viên</span>
+                <span className="ml-2 text-xl">Thông tin học sinh</span>
               </Link>
               <Link
                 to={`/${role}/studentScore`}

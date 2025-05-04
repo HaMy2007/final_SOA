@@ -41,7 +41,7 @@ const StudentScoreDetail = () => {
         }));
         setSemesters(formatted);
       } catch (err) {
-        console.error("Lỗi khi tải thông tin sinh viên hoặc học kỳ:", err);
+        console.error("Lỗi khi tải thông tin học sinh hoặc học kỳ:", err);
       }
     };
 
@@ -89,14 +89,14 @@ const StudentScoreDetail = () => {
         <div className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/3">
           <h2 className="text-xl font-semibold mb-4">{studentInfo.name}</h2>
           <p className="text-sm mb-1">
-            <strong>TDTU ID:</strong> {studentInfo.tdt_id}
+            <strong>Mã định danh:</strong> {studentInfo.tdt_id}
           </p>
           <p className="text-sm mb-1">
-            <strong>CPA:</strong> {gpa.toFixed(2)}
+            <strong>GPA:</strong> {gpa.toFixed(2)}
           </p>
-          <p className="text-sm mb-1">
+          {/* <p className="text-sm mb-1">
             <strong>Số tín chỉ:</strong> {totalCredits}
-          </p>
+          </p> */}
           <p className="text-sm mb-4">
             <strong>Trạng thái:</strong> Bình thường
           </p>
@@ -112,8 +112,8 @@ const StudentScoreDetail = () => {
           <table className="w-full bg-white rounded-lg shadow-md overflow-hidden">
             <thead className="bg-gray-200 text-gray-700 text-sm">
               <tr>
-                <th className="p-3 text-left">Tên học phần</th>
-                <th className="p-3 text-left">Mã học phần</th>
+                <th className="p-3 text-left">Tên môn</th>
+                <th className="p-3 text-left">Mã môn</th>
                 <th className="p-3 text-center">Điểm 15p</th>
                 <th className="p-3 text-center">Điểm 1 tiết</th>
                 <th className="p-3 text-center">Điểm giữa kỳ</th>

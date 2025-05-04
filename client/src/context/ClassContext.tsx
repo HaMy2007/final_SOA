@@ -1,8 +1,13 @@
-import { createContext, ReactNode, useContext, useState } from "react";
-import { ClassTypes } from "../types/class";
 import axios from "axios";
-import { useEffect } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import Swal from "sweetalert2";
+import { ClassTypes } from "../types/class";
 
 type ClassContext = {
   classes: ClassTypes[];
@@ -63,19 +68,22 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:4000/api/classes", {
-        class_id: studentClass.class_id.trim(),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await axios.post(
+        "http://localhost:4000/api/classes",
+        {
+          class_id: studentClass.class_id.trim(),
         },
-      });
-  
-      const createdClass = res.data.class; 
-  
-      handleAddClass(createdClass); 
-  
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const createdClass = res.data.class;
+
+      handleAddClass(createdClass);
+
       setStudentClass((prev) => ({
         ...prev,
         class_id: "",
@@ -106,13 +114,13 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
 
   const handleAddAdvisor = (email: string) => {
     setAdvisor(email);
-    console.log("Thêm cố vấn với email:", email);
+    console.log("Thêm giáo viên với email:", email);
     setNewAdvisorEmail("");
   };
 
   const handleEditAdvisor = (email: string) => {
     setAdvisor(email);
-    console.log("Chỉnh sửa cố vấn với email:", email);
+    console.log("Chỉnh sửa giáo viên với email:", email);
     setNewAdvisorEmail("");
   };
 
@@ -143,8 +151,8 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
         error,
         setError,
         handleCreateClass,
-        handleAddAdvisor, // Cung cấp hàm thêm cố vấn
-        advisor, // Cung cấp trạng thái cố vấn
+        handleAddAdvisor, // Cung cấp hàm thêm giáo viên
+        advisor, // Cung cấp trạng thái giáo viên
       }}
     >
       {children}

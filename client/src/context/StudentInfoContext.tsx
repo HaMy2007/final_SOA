@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 import { mockListStudents } from "../data/mockListStudent";
 // import { v4 as uuidv4 } from "uuid";
 
@@ -33,7 +33,7 @@ export const StudentInfoProvider = ({ children }: StudentInfoProviderProps) => {
   };
 
   const handleDelete = (tdtId: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sinh viên này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa học sinh này?")) {
       setStudents(students.filter((student) => student.tdt_id !== tdtId));
     }
   };

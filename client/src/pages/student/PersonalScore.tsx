@@ -87,14 +87,14 @@ const PersonalScore = () => {
         <div className="bg-white p-6 rounded-lg shadow-md w-full md:w-1/3">
           <h2 className="text-xl font-semibold mb-4">{userDetail.name}</h2>
           <p className="text-sm mb-1">
-            <strong>TDTU ID:</strong> {userDetail.tdt_id}
+            <strong>Mã định danh:</strong> {userDetail.tdt_id}
           </p>
           <p className="text-sm mb-1">
-            <strong>CPA:</strong> {gpa.toFixed(2)}
+            <strong>GPA:</strong> {gpa.toFixed(2)}
           </p>
-          <p className="text-sm mb-1">
+          {/* <p className="text-sm mb-1">
             <strong>Số tín chỉ:</strong> {totalCredits}
-          </p>
+          </p> */}
           <p className="text-sm mb-4">
             <strong>Trạng thái:</strong> Bình thường
           </p>
@@ -110,10 +110,13 @@ const PersonalScore = () => {
           <table className="w-full bg-white rounded-lg shadow-md overflow-hidden">
             <thead className="bg-gray-200 text-gray-700 text-sm">
               <tr>
-                <th className="p-3 text-left">Tên học phần</th>
-                <th className="p-3 text-left">Mã học phần</th>
-                <th className="p-3 text-center">Tín chỉ</th>
-                <th className="p-3 text-center">Điểm hệ 10</th>
+                <th className="p-3 text-left">Tên môn</th>
+                <th className="p-3 text-left">Mã môn</th>
+                <th className="p-3 text-center">Điểm 15p</th>
+                <th className="p-3 text-center">Điểm 1 tiết</th>
+                <th className="p-3 text-center">Điểm giữa kỳ</th>
+                <th className="p-3 text-center">Điểm cuối kỳ</th>
+                {/* <th className="p-3 text-center">Điểm hệ 10</th> */}
                 {/* <th className="p-3 text-left">Kì học</th> */}
                 <th className="p-3 text-left">
                   <div className="flex flex-col">
@@ -139,7 +142,16 @@ const PersonalScore = () => {
                 <tr key={index} className="border-t text-sm">
                   <td className="p-3">{grade.subject_name}</td>
                   <td className="p-3">{grade.subject_code}</td>
-                  <td className="p-3 text-center">{grade.credit}</td>
+                  <td className="p-3 text-center">{grade.score_15p ?? "-"}</td>
+                  <td className="p-3 text-center">
+                    {grade.score_1tiet ?? "-"}
+                  </td>
+                  <td className="p-3 text-center">
+                    {grade.score_giua_ky ?? "-"}
+                  </td>
+                  <td className="p-3 text-center">
+                    {grade.score_cuoi_ky ?? "-"}
+                  </td>
                   <td className="p-3 text-center">{grade.score ?? "-"}</td>
                   <td className="p-3">
                     {selectedSemesterId === "all" ? grade.semester_name : ""}

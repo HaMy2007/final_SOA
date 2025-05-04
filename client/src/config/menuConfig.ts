@@ -48,7 +48,7 @@ export const menuItems: MenuItem[] = [
 
   {
     path: "studentScore",
-    label: "Bảng điểm sinh viên",
+    label: "Bảng điểm học sinh",
     icon: MdOutlineScore,
     allowedRoles: ["advisor", "admin"],
   },
@@ -60,7 +60,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     path: "students",
-    label: "Thông tin sinh viên",
+    label: "Thông tin học sinh",
     icon: IoMdInformationCircle,
     allowedRoles: ["advisor", "admin"],
   },
@@ -72,7 +72,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     path: "advisorInfo",
-    label: "Thông tin cố vấn",
+    label: "Thông tin giáo viên",
     icon: SiInformatica,
     allowedRoles: ["admin"],
   },

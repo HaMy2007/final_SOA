@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 import { mockAdvisors } from "../data/mockAdvisors";
 
 type AdvisorInfoContextType = {
@@ -32,7 +32,7 @@ export const AdvisorInfoProvider = ({ children }: AdvisorInfoProviderProps) => {
   };
 
   const handleDelete = (tdtId: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa cố vấn này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa giáo viên này?")) {
       setAdvisors(advisors.filter((advisor) => advisor.tdt_id !== tdtId));
     }
   };

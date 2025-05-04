@@ -13,7 +13,6 @@ type Props = {
 };
 
 const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
-
   const [isEditing, setIsEditing] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any>(null);
 
@@ -26,20 +25,21 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
-      const userId = editingStudent._id; 
-  
+      const userId = editingStudent._id;
+
       const updatePayload = {
         name: editingStudent.name,
         phone_number: editingStudent.phoneNumber || editingStudent.phone_number,
-        parent_number: editingStudent.parentPhoneNumber || editingStudent.parent_number,
+        parent_number:
+          editingStudent.parentPhoneNumber || editingStudent.parent_number,
         address: editingStudent.address,
         date_of_birth:
-        editingStudent.dateOfBirth instanceof Date
-          ? editingStudent.dateOfBirth.toISOString()
-          : editingStudent.dateOfBirth || editingStudent.date_of_birth,
+          editingStudent.dateOfBirth instanceof Date
+            ? editingStudent.dateOfBirth.toISOString()
+            : editingStudent.dateOfBirth || editingStudent.date_of_birth,
         gender: editingStudent.gender,
       };
-  
+
       const res = await axios.put(
         `http://localhost:4003/api/users/${userId}`,
         updatePayload,
@@ -56,16 +56,17 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
         timer: 1500,
         showConfirmButton: false,
       });
-  
+
       setStudents((prev) =>
-        prev.map((s) =>
-          s._id === userId ? { ...s, ...updatePayload } : s
-        )
+        prev.map((s) => (s._id === userId ? { ...s, ...updatePayload } : s))
       );
-  
+
       setIsEditing(false);
     } catch (err: any) {
-      console.error("Lỗi khi cập nhật sinh viên:", err.response?.data?.message || err.message);
+      console.error(
+        "Lỗi khi cập nhật học sinh:",
+        err.response?.data?.message || err.message
+      );
       Swal.fire({
         icon: "error",
         title: "Cập nhật thất bại!",
@@ -80,7 +81,7 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
         <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-1/2">
             <h2 className="text-xl font-bold mb-4">
-              Chỉnh sửa thông tin sinh viên
+              Chỉnh sửa thông tin học sinh
             </h2>
             <form onSubmit={handleUpdate} className="space-y-2">
               <div>
@@ -115,9 +116,13 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
                 <label className="block text-sm font-medium">Ngày sinh</label>
                 <input
                   type="date"
-                  value={editingStudent.date_of_birth
-                    ? new Date(editingStudent.date_of_birth).toISOString().split("T")[0]
-                    : ""}
+                  value={
+                    editingStudent.date_of_birth
+                      ? new Date(editingStudent.date_of_birth)
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
                   onChange={(e) =>
                     setEditingStudent({
                       ...editingStudent,
@@ -148,18 +153,21 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
                 </label>
                 <input
                   type="text"
-                  value={editingStudent.phone_number?.startsWith("0")
-                    ? editingStudent.phone_number
-                    : "0" + editingStudent.phone_number}
+                  value={
+                    editingStudent.phone_number?.startsWith("0")
+                      ? editingStudent.phone_number
+                      : "0" + editingStudent.phone_number
+                  }
                   onChange={(e) => {
                     const value = e.target.value;
-                    const sanitized = value.startsWith("0") ? value.slice(1) : value;
+                    const sanitized = value.startsWith("0")
+                      ? value.slice(1)
+                      : value;
                     setEditingStudent({
                       ...editingStudent,
                       phone_number: sanitized,
-                    })
-                  }
-                  }
+                    });
+                  }}
                   className="w-full p-2 border rounded"
                 />
               </div>
@@ -169,7 +177,11 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
                 </label>
                 <input
                   type="text"
-                  value={editingStudent.parent_number ? editingStudent.parent_number : "Chưa có thông tin"}
+                  value={
+                    editingStudent.parent_number
+                      ? editingStudent.parent_number
+                      : "Chưa có thông tin"
+                  }
                   onChange={(e) =>
                     setEditingStudent({
                       ...editingStudent,
@@ -217,19 +229,28 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
         <thead className="bg-gray-200">
           <tr>
             <th className="text-base border border-gray-300 p-2">Họ và tên</th>
-            <th className="text-base border border-gray-300 p-2">Mã số sinh viên</th>
+            <th className="text-base border border-gray-300 p-2">
+              Mã định danh
+            </th>
             <th className="text-base border border-gray-300 p-2">Giới tính</th>
             <th className="text-base border border-gray-300 p-2">Ngày sinh</th>
             <th className="text-base border border-gray-300 p-2">Email</th>
-            <th className="text-base border border-gray-300 p-2">Số điện thoại</th>
-            <th className="text-base border border-gray-300 p-2">Số điện thoại phụ huynh</th>
+            <th className="text-base border border-gray-300 p-2">
+              Số điện thoại
+            </th>
+            <th className="text-base border border-gray-300 p-2">
+              Số điện thoại phụ huynh
+            </th>
             <th className="border text-base border-gray-300 p-2">Địa chỉ</th>
             <th className="border text-base border-gray-300 p-2">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           {students.map((student) => (
-            <tr key={student.tdt_id || student._id} className="hover:bg-gray-100">
+            <tr
+              key={student.tdt_id || student._id}
+              className="hover:bg-gray-100"
+            >
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.name}
               </td>
@@ -249,11 +270,13 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.phone_number?.startsWith("0")
-                    ? student.phone_number
-                    : "0" + student.phone_number}
+                  ? student.phone_number
+                  : "0" + student.phone_number}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {student.parent_number ? student.parent_number : "Chưa có thông tin"}
+                {student.parent_number
+                  ? student.parent_number
+                  : "Chưa có thông tin"}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {student.address}
@@ -265,14 +288,13 @@ const StudentList = ({ students, onDelete, classId, setStudents }: Props) => {
                 >
                   <CiEdit />
                 </button>
-                
+
                 <button
                   onClick={() => onDelete(student.tdt_id)}
                   className="cursor-pointer text-red-500 text-xl hover:text-red-700"
                 >
                   <MdDelete />
                 </button>
-                
               </td>
             </tr>
           ))}

@@ -81,7 +81,7 @@ const StudentInfor = () => {
         }
       } catch (err) {
         console.error(
-          "Lỗi khi lấy danh sách sinh viên:",
+          "Lỗi khi lấy danh sách học sinh:",
           (err as Error).message
         );
       } finally {
@@ -144,10 +144,10 @@ const StudentInfor = () => {
       Swal.fire({
         title: "Kết quả Import",
         html: `
-          <p>Đã thêm: <b>${res.data.addedCount}</b> sinh viên</p>
+          <p>Đã thêm: <b>${res.data.addedCount}</b> học sinh</p>
           ${
             res.data.alreadyInClass.length > 0
-              ? `<p>Sinh viên này đã có trong lớp:</p><ul style="text-align: center">${res.data.alreadyInClass
+              ? `<p>Học sinh này đã có trong lớp:</p><ul style="text-align: center">${res.data.alreadyInClass
                   .map((email: string) => `<li>${email}</li>`)
                   .join("")}</ul>`
               : ""
@@ -157,7 +157,7 @@ const StudentInfor = () => {
         width: 600,
       });
 
-      // Gọi lại danh sách sinh viên sau khi import
+      // Gọi lại danh sách học sinh sau khi import
       const updatedClass = res.data.updatedClass;
       const newUserIds = updatedClass.class_member;
 
@@ -189,9 +189,9 @@ const StudentInfor = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        Swal.fire("Thành công", "Đã thêm sinh viên vào lớp", "success");
+        Swal.fire("Thành công", "Đã thêm học sinh vào lớp", "success");
 
-        // Gọi lại danh sách sinh viên sau khi thêm
+        // Gọi lại danh sách học sinh sau khi thêm
         const updatedClass = res.data.class;
         const newUserIds = updatedClass.class_member;
         const usersRes = await axios.post(
@@ -204,10 +204,10 @@ const StudentInfor = () => {
         setIsAdding(false);
       } catch (error: any) {
         const message = error?.response?.data?.message;
-        if (message === "Sinh viên đã tồn tại trong lớp") {
+        if (message === "Học sinh đã tồn tại trong lớp") {
           Swal.fire("Thông báo", message, "warning");
         } else {
-          Swal.fire("Lỗi", message || "Không thể thêm sinh viên", "error");
+          Swal.fire("Lỗi", message || "Không thể thêm học sinh", "error");
         }
       }
     } else if (isAdmin) {
@@ -238,16 +238,16 @@ const StudentInfor = () => {
         }
       );
 
-      Swal.fire("Thành công", "Đã thêm sinh viên mới vào hệ thống", "success");
+      Swal.fire("Thành công", "Đã thêm học sinh mới vào hệ thống", "success");
 
       // Cập nhật danh sách
       setStudents((prev) => [...prev, res.data.student]);
       setIsAdding(false);
     } catch (err: any) {
-      console.error("Lỗi khi thêm sinh viên:", err);
+      console.error("Lỗi khi thêm học sinh:", err);
       Swal.fire(
         "Lỗi",
-        err?.response?.data?.message || "Không thể thêm sinh viên",
+        err?.response?.data?.message || "Không thể thêm học sinh",
         "error"
       );
     }
@@ -257,8 +257,8 @@ const StudentInfor = () => {
   //   const result = await Swal.fire({
   //     title: "Xác nhận xoá",
   //     text: isAdmin
-  //     ? "Bạn có chắc muốn xoá sinh viên này khỏi hệ thống không?"
-  //     : "Bạn có chắc muốn xoá sinh viên này khỏi lớp không?",
+  //     ? "Bạn có chắc muốn xoá học sinh này khỏi hệ thống không?"
+  //     : "Bạn có chắc muốn xoá học sinh này khỏi lớp không?",
   //     icon: "warning",
   //     showCancelButton: true,
   //     confirmButtonText: "Xoá",
@@ -275,10 +275,10 @@ const StudentInfor = () => {
   //       );
 
   //       setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
-  //       Swal.fire("Đã xoá!", "Sinh viên đã được xoá khỏi lớp.", "success");
+  //       Swal.fire("Đã xoá!", "học sinh đã được xoá khỏi lớp.", "success");
   //     } catch (error) {
-  //       console.error("Lỗi khi xoá sinh viên khỏi lớp:", error);
-  //       Swal.fire("Lỗi", "Không thể xoá sinh viên khỏi lớp.", "error");
+  //       console.error("Lỗi khi xoá học sinh khỏi lớp:", error);
+  //       Swal.fire("Lỗi", "Không thể xoá học sinh khỏi lớp.", "error");
   //     }
   //   }
   // };
@@ -287,8 +287,8 @@ const StudentInfor = () => {
     const result = await Swal.fire({
       title: "Xác nhận xoá",
       text: isAdmin
-        ? "Bạn có chắc muốn xoá sinh viên này khỏi hệ thống không?"
-        : "Bạn có chắc muốn xoá sinh viên này khỏi lớp không?",
+        ? "Bạn có chắc muốn xoá học sinh này khỏi hệ thống không?"
+        : "Bạn có chắc muốn xoá học sinh này khỏi lớp không?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Xoá",
@@ -310,7 +310,7 @@ const StudentInfor = () => {
 
         Swal.fire(
           "Đã xoá!",
-          "Sinh viên đã bị xoá khỏi hệ thống và lớp (nếu có).",
+          "học sinh đã bị xoá khỏi hệ thống và lớp (nếu có).",
           "success"
         );
         setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
@@ -322,12 +322,12 @@ const StudentInfor = () => {
           }
         );
 
-        Swal.fire("Đã xoá!", "Sinh viên đã được xoá khỏi lớp.", "success");
+        Swal.fire("Đã xoá!", "học sinh đã được xoá khỏi lớp.", "success");
         setStudents((prev) => prev.filter((s) => s.tdt_id !== tdt_id));
       }
     } catch (error) {
-      console.error("Lỗi khi xoá sinh viên:", error);
-      Swal.fire("Lỗi", "Không thể xoá sinh viên.", "error");
+      console.error("Lỗi khi xoá học sinh:", error);
+      Swal.fire("Lỗi", "Không thể xoá học sinh.", "error");
     }
   };
 
@@ -336,7 +336,7 @@ const StudentInfor = () => {
       <div className="h-full mx-auto overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-bold text-2xl text-blue-950">
-            Thông tin sinh viên
+            Thông tin học sinh
           </h1>
           <div className="flex gap-2">
             <input
@@ -351,7 +351,7 @@ const StudentInfor = () => {
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
               >
-                <option value="">Tất cả sinh viên</option>
+                <option value="">Tất cả học sinh</option>
                 <option value="no_class">Chưa có lớp</option>
                 {availableClasses.map((cls) => (
                   <option key={cls.class_id} value={cls.class_id}>
@@ -365,7 +365,7 @@ const StudentInfor = () => {
               onClick={() => setIsAdding(true)}
             >
               <IoMdAdd className="text-white font-bold" />
-              Thêm sinh viên
+              Thêm học sinh
             </button>
 
             <input
@@ -382,7 +382,7 @@ const StudentInfor = () => {
           <div className="fixed inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
             <div className="bg-white p-6 rounded-md w-3/5 mx-auto shadow-2xl">
               <h2 className="text-xl mb-4 font-bold text-blue-700">
-                Thêm Sinh Viên
+                Thêm học sinh
               </h2>
               <form onSubmit={handleSubmit}>
                 {isAdvisor ? (
@@ -390,14 +390,14 @@ const StudentInfor = () => {
                     <input
                       type="email"
                       name="email"
-                      placeholder="Email sinh viên"
+                      placeholder="Email học sinh"
                       value={newStudent.email}
                       onChange={handleInputChange}
                       required
                       className="border rounded-md px-2 mb-4 w-full py-2"
                     />
                     <p className="text-sm italic text-gray-500 mt-1">
-                      Chú ý: Chỉ thêm email sinh viên đã có trong hệ thống
+                      Chú ý: Chỉ thêm email học sinh đã có trong hệ thống
                     </p>
                   </>
                 ) : (
@@ -414,7 +414,7 @@ const StudentInfor = () => {
                     <input
                       type="text"
                       name="tdt_id"
-                      placeholder="Mã số sinh viên"
+                      placeholder="Mã định danh"
                       value={newStudent.tdt_id}
                       onChange={handleInputChange}
                       required

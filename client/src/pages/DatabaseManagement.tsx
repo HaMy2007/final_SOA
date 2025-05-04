@@ -20,10 +20,10 @@ const UploadSection = ({
   const handleFileUpload = async (type: string, file: File) => {
     if (!file) return;
     setUploading(true);
-  
+
     const formData = new FormData();
     formData.append("file", file);
-  
+
     let endpoint = "";
     switch (type) {
       case "subjects":
@@ -54,20 +54,25 @@ const UploadSection = ({
         setUploading(false);
         return;
     }
-  
+
     try {
       const res = await axios.post(endpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-         },
-      });  
-      Swal.fire("Thành công", res.data.message || "Tải lên thành công", "success");
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      Swal.fire(
+        "Thành công",
+        res.data.message || "Tải lên thành công",
+        "success"
+      );
       setFile(null);
     } catch (error: any) {
       const msg = error.response?.data?.message || "Không thể tải lên";
       Swal.fire("Lỗi", msg, "error");
       setFile(null);
-    }finally{
+    } finally {
       setUploading(false);
     }
   };
@@ -95,14 +100,18 @@ const UploadSection = ({
           disabled={!file}
           onClick={() => handleFileUpload(type, file!)}
           className={`flex items-center gap-2 px-4 py-2 ${
-            file ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-400 cursor-not-allowed"
+            file
+              ? "bg-blue-500 hover:bg-blue-600"
+              : "bg-gray-400 cursor-not-allowed"
           } text-white rounded-md`}
         >
           <FaFileUpload />
           {uploading ? "Đang tải..." : "Tải lên"}
         </button>
       </div>
-      {file && <p className="text-sm text-gray-500 mt-1">Đã chọn: {file.name}</p>}
+      {file && (
+        <p className="text-sm text-gray-500 mt-1">Đã chọn: {file.name}</p>
+      )}
     </div>
   );
 };
@@ -119,9 +128,12 @@ const DatabaseManagement = () => {
       if (role !== "advisor") return;
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`http://localhost:4000/api/teachers/${user._id}/class`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await axios.get(
+          `http://localhost:4000/api/teachers/${user._id}/class`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setClassId(res.data.class.class_id);
       } catch (error) {
         console.error("Lỗi khi lấy classId:", error);
@@ -137,7 +149,7 @@ const DatabaseManagement = () => {
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">Quản lý cơ sở dữ liệu</h1>
       <p className="text-gray-600 mb-8">
-        Nơi tải lên dữ liệu sinh viên, điểm số, kỳ học, môn học
+        Nơi tải lên dữ liệu học sinh, điểm số, kỳ học, môn học
       </p>
       {/* {loading ? (
         <div className="text-gray-500 italic">Đang tải dữ liệu lớp học...</div>
@@ -148,12 +160,12 @@ const DatabaseManagement = () => {
             <UploadSection
               type="cvht"
               title="Danh sách CVHT"
-              description="Tải danh sách tài khoản và thông tin Cố vấn."
+              description="Tải danh sách tài khoản và thông tin giáo viên."
             />
             <UploadSection
               type="students"
-              title="Danh sách sinh viên"
-              description="Tải danh sách tài khoản và thông tin sinh viên."
+              title="Danh sách học sinh"
+              description="Tải danh sách tài khoản và thông tin học sinh."
             />
             <UploadSection
               type="subjects"
@@ -168,38 +180,38 @@ const DatabaseManagement = () => {
           </>
         )}
 
-      {role === "advisor" && classId && (
-        <>
-          <UploadSection
-            type="members"
-            title="Danh sách sinh viên"
-            description="Tải danh sách tài khoản và thông tin sinh viên."
-            classId={classId}
-          />
-          <UploadSection
-            type="subjects"
-            title="Danh sách môn học"
-            description="Tải danh sách môn học lên hệ thống."
-          />
-          <UploadSection
-            type="semesters"
-            title="Danh sách kỳ học"
-            description="Tải danh sách kỳ học lên hệ thống."
-          />
-          <UploadSection
-            type="grades"
-            title="Cập nhật bảng điểm"
-            description="Tải bảng điểm của sinh viên."
-          />
-        </>
-      )}
+        {role === "advisor" && classId && (
+          <>
+            <UploadSection
+              type="members"
+              title="Danh sách học sinh"
+              description="Tải danh sách tài khoản và thông tin học sinh."
+              classId={classId}
+            />
+            <UploadSection
+              type="subjects"
+              title="Danh sách môn học"
+              description="Tải danh sách môn học lên hệ thống."
+            />
+            <UploadSection
+              type="semesters"
+              title="Danh sách kỳ học"
+              description="Tải danh sách kỳ học lên hệ thống."
+            />
+            <UploadSection
+              type="grades"
+              title="Cập nhật bảng điểm"
+              description="Tải bảng điểm của học sinh."
+            />
+          </>
+        )}
       </div>
       {/* )} */}
 
       {role === "advisor" && (
         <div className="mt-4 text-gray-600 italic">
           <p>
-            Lưu ý: Các sinh viên sẽ chưa được thêm lớp. Yêu cầu CVHT tạo lớp và
+            Lưu ý: Các học sinh sẽ chưa được thêm lớp. Yêu cầu CVHT tạo lớp và
             thêm tại bảng Thông tin SV.
           </p>
         </div>

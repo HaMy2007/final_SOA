@@ -147,7 +147,7 @@ const Profile = () => {
   if (loading) return <div>Đang tải dữ liệu...</div>;
   if (!userDetail) return <div>Không tìm thấy thông tin người dùng</div>;
 
-  // --- Sinh viên ---
+  // --- Học sinh---
   if (role === "student") {
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4 flex justify-center items-start">
@@ -158,7 +158,7 @@ const Profile = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
             <div>
               <p className="text-sm text-gray-500">Vai trò</p>
-              <p className="font-medium">Sinh viên</p>
+              <p className="font-medium">Học sinh</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Họ và tên</p>
@@ -204,7 +204,7 @@ const Profile = () => {
     );
   }
 
-  // --- Cố vấn và admin ---
+  // --- giáo viên và admin ---
   if (role === "advisor" || role === "admin") {
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4 flex justify-center items-start">

@@ -1,13 +1,15 @@
+import { useState } from "react";
+import { CiLogout } from "react-icons/ci";
+import { MdChangeCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { menuItems } from "../config/menuConfig";
-import { CiLogout } from "react-icons/ci";
 import Header from "./Header";
-import { MdChangeCircle } from "react-icons/md";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = Array.isArray(user.role) ? user.role[0] : user.role;
+  const [selectedItem, setSelectedItem] = useState("");
 
   const filteredMenuItems = menuItems.filter((item) =>
     item.allowedRoles.includes(userRole)
@@ -34,8 +36,13 @@ const Sidebar = () => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(fullPath)}
-              className="flex items-center gap-2 text-white p-3 hover:bg-blue-900 rounded-md transition-colors"
+              onClick={() => {
+                navigate(fullPath);
+                setSelectedItem(item.path);
+              }}
+              className={`flex items-center gap-2 text-white p-3  cursor-pointer hover:bg-blue-900 rounded-md transition-colors ${
+                selectedItem === item.path ? "bg-blue-900" : ""
+              }`}
             >
               <Icon />
               <span>{item.label}</span>

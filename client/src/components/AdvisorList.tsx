@@ -32,12 +32,16 @@ const AdvisorList = ({ advisors, onRefresh }: Props) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        await Swal.fire("Đã xoá!", "Cố vấn đã được xoá thành công.", "success");
+        await Swal.fire(
+          "Đã xoá!",
+          "giáo viên đã được xoá thành công.",
+          "success"
+        );
         onRefresh();
       }
     } catch (err) {
-      console.error("Lỗi khi xoá cố vấn:", err);
-      Swal.fire("Lỗi!", "Đã xảy ra lỗi khi xoá cố vấn.", "error");
+      console.error("Lỗi khi xoá giáo viên:", err);
+      Swal.fire("Lỗi!", "Đã xảy ra lỗi khi xoá giáo viên.", "error");
     }
   };
 
@@ -64,7 +68,7 @@ const AdvisorList = ({ advisors, onRefresh }: Props) => {
         <div className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-1/2">
             <h2 className="text-xl font-bold mb-4">
-              Chỉnh sửa thông tin cố vấn
+              Chỉnh sửa thông tin giáo viên
             </h2>
             <form onSubmit={handleUpdate} className="space-y-2">
               <div>
@@ -170,7 +174,7 @@ const AdvisorList = ({ advisors, onRefresh }: Props) => {
           <tr>
             <th className="text-base border border-gray-300 p-2">Họ và tên</th>
             <th className="text-base border border-gray-300 p-2">
-              Mã số cố vấn
+              Mã số giáo viên
             </th>
             <th className="text-base border border-gray-300 p-2">Giới tính</th>
             <th className="text-base border border-gray-300 p-2">Lớp</th>

@@ -45,7 +45,7 @@ const AdvisorInfor = () => {
       );
       setAdvisors(updatedAdvisors);
     } catch (err) {
-      console.error("Lỗi khi lấy danh sách cố vấn:", err);
+      console.error("Lỗi khi lấy danh sách giáo viên:", err);
     }
   };
 
@@ -73,15 +73,19 @@ const AdvisorInfor = () => {
       phone_number: newAdvisor.phone_number,
       address: newAdvisor.address,
       date_of_birth: newAdvisor.date_of_birth,
-      class_id: newAdvisor.class_id, 
+      class_id: newAdvisor.class_id,
     };
-  
+
     try {
       const token = localStorage.getItem("token");
       console.log("Token:", token);
-      const res = await axios.post("http://localhost:4003/api/users/add-advisor", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.post(
+        "http://localhost:4003/api/users/add-advisor",
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       console.log("API Response:", res.data);
       setIsAdding(false);
       setNewAdvisor({
@@ -91,27 +95,26 @@ const AdvisorInfor = () => {
         date_of_birth: "",
         phone_number: "",
         address: "",
-        class_id: ""
+        class_id: "",
       });
       fetchAdvisors();
-      Swal.fire("Thành công", "Đã thêm cố vấn vào hệ thống", "success");
-      
-    // } catch (err: any) {
-    //   console.error("Lỗi khi thêm cố vấn:", err);
-    //   Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm cố vấn", "error");
-    // }
-    }catch (err: any) {
-      console.error("Lỗi khi thêm cố vấn:", err);
-    
+      Swal.fire("Thành công", "Đã thêm giáo viên vào hệ thống", "success");
+
+      // } catch (err: any) {
+      //   console.error("Lỗi khi thêm giáo viên:", err);
+      //   Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm giáo viên", "error");
+      // }
+    } catch (err: any) {
+      console.error("Lỗi khi thêm giáo viên:", err);
+
       const errorMessage =
-        err.response?.data?.message ||   // Lỗi chi tiết từ server (nếu có)
-        err.message ||                   // Lỗi từ axios
-        "Không thể thêm cố vấn";         // fallback
-    
+        err.response?.data?.message || // Lỗi chi tiết từ server (nếu có)
+        err.message || // Lỗi từ axios
+        "Không thể thêm giáo viên"; // fallback
+
       Swal.fire("Lỗi", errorMessage, "error");
     }
-    
-  };  
+  };
 
   const filteredAdvisors = advisors.filter((advisor) => {
     return Object.values(advisor).some((value) =>
@@ -123,7 +126,9 @@ const AdvisorInfor = () => {
     <div className="w-full h-full bg-white">
       <div className="h-full mx-auto overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="font-bold text-2xl text-blue-950">Thông tin cố vấn</h1>
+          <h1 className="font-bold text-2xl text-blue-950">
+            Thông tin giáo viên
+          </h1>
           <div className="flex gap-2">
             <input
               placeholder="Tìm kiếm"
@@ -136,7 +141,7 @@ const AdvisorInfor = () => {
               onClick={() => setIsAdding(true)}
             >
               <IoMdAdd className="text-white font-bold" />
-              Thêm cố vấn
+              Thêm giáo viên
             </button>
 
             {/* <button className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl">
@@ -150,7 +155,7 @@ const AdvisorInfor = () => {
           <div className="fixed inset-0 flex items-center justify-center bg-gray-100 bg-opacity-50">
             <div className="bg-white p-6 rounded-md w-3/5 mx-auto shadow-2xl">
               <h2 className="text-xl mb-4 font-bold text-blue-700">
-                Thêm Cố Vấn
+                Thêm giáo viên
               </h2>
               <form onSubmit={handleSubmit}>
                 <input
@@ -165,7 +170,7 @@ const AdvisorInfor = () => {
                 <input
                   type="text"
                   name="tdt_id"
-                  placeholder="Mã số cố vấn"
+                  placeholder="Mã số giáo viên"
                   value={newAdvisor.tdt_id}
                   onChange={handleInputChange}
                   required
@@ -174,7 +179,7 @@ const AdvisorInfor = () => {
                 <input
                   type="text"
                   name="class_id"
-                  placeholder="Lớp cố vấn dạy"
+                  placeholder="Lớp giáo viên dạy"
                   value={newAdvisor.class_id}
                   onChange={handleInputChange}
                   // required
@@ -237,7 +242,7 @@ const AdvisorInfor = () => {
           </div>
         )}
 
-        <AdvisorList advisors={filteredAdvisors} onRefresh={fetchAdvisors}/>
+        <AdvisorList advisors={filteredAdvisors} onRefresh={fetchAdvisors} />
       </div>
     </div>
   );
