@@ -26,6 +26,7 @@ export const menuItems: MenuItem[] = [
     icon: FaHome,
     allowedRoles: ["admin", "student", "advisor"],
   },
+
   {
     path: "forum",
     label: "Diễn đàn",
@@ -44,6 +45,7 @@ export const menuItems: MenuItem[] = [
     icon: GrScorecard,
     allowedRoles: ["admin", "advisor"],
   },
+
   {
     path: "studentScore",
     label: "Bảng điểm sinh viên",

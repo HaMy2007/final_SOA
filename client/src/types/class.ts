@@ -11,6 +11,7 @@ export interface ClassTypes {
   id?: string;
   class_id: string;
   class_name: string;
+  name?: string;
   class_teacher?: string;
   class_member?: string[];
   updatedAt?: string;

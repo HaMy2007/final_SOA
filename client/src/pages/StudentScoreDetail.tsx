@@ -114,8 +114,10 @@ const StudentScoreDetail = () => {
               <tr>
                 <th className="p-3 text-left">Tên học phần</th>
                 <th className="p-3 text-left">Mã học phần</th>
-                <th className="p-3 text-center">Tín chỉ</th>
-                <th className="p-3 text-center">Điểm hệ 10</th>
+                <th className="p-3 text-center">Điểm 15p</th>
+                <th className="p-3 text-center">Điểm 1 tiết</th>
+                <th className="p-3 text-center">Điểm giữa kỳ</th>
+                <th className="p-3 text-center">Điểm cuối kỳ</th>
                 {/* <th className="p-3 text-left">Kì học</th> */}
                 <th className="p-3 text-left">
                   <div className="flex flex-col">
@@ -141,7 +143,16 @@ const StudentScoreDetail = () => {
                 <tr key={index} className="border-t text-sm">
                   <td className="p-3">{grade.subject_name}</td>
                   <td className="p-3">{grade.subject_code}</td>
-                  <td className="p-3 text-center">{grade.credit}</td>
+                  <td className="p-3 text-center">{grade.score_15p ?? "-"}</td>
+                  <td className="p-3 text-center">
+                    {grade.score_1tiet ?? "-"}
+                  </td>
+                  <td className="p-3 text-center">
+                    {grade.score_giua_ky ?? "-"}
+                  </td>
+                  <td className="p-3 text-center">
+                    {grade.score_cuoi_ky ?? "-"}
+                  </td>
                   <td className="p-3 text-center">{grade.score ?? "-"}</td>
                   <td className="p-3">
                     {selectedSemesterId === "all" ? grade.semester_name : ""}
