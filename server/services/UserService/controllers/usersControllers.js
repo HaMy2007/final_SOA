@@ -18,7 +18,7 @@ exports.getUsersByIds = async (req, res) => {
     const users = await User.find({ _id: { $in: ids }, role: "student" });
     res.status(200).json(users);
   } catch (error) {
-    console.error("Lỗi truy vấn sinh viên:", error.message);
+    console.error("Lỗi truy vấn học sinh:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -80,7 +80,7 @@ exports.getAllStudents = async (req, res) => {
 //             teacher_id: userId,
 //           });
 //         } catch (error) {
-//           console.error("Gán cố vấn thất bại:", error.message);
+//           console.error("Gán giáo viên thất bại:", error.message);
 //         }
 //       } else if (oldClassId){
 //         try {
@@ -88,7 +88,7 @@ exports.getAllStudents = async (req, res) => {
 //             `http://localhost:4000/api/classes/${oldClassId}/remove-teacher`
 //           );
 //         } catch (error) {
-//           console.error("Gỡ cố vấn khỏi lớp thất bại:", error.message);
+//           console.error("Gỡ giáo viên khỏi lớp thất bại:", error.message);
 //         }
 //       }
 //     }
@@ -129,7 +129,9 @@ exports.updateUserProfile = async (req, res) => {
     });
 
     if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ message: "Không có trường hợp lệ để cập nhật" });
+      return res
+        .status(400)
+        .json({ message: "Không có trường hợp lệ để cập nhật" });
     }
 
     const currentUser = await User.findById(userId);
@@ -152,14 +154,16 @@ exports.updateUserProfile = async (req, res) => {
       if (oldClassCode) {
         try {
           // Truy vấn sang service lớp để tìm _id của lớp cũ theo class_id
-          const resOld = await axios.get(`http://localhost:4000/api/${oldClassCode}`);
+          const resOld = await axios.get(
+            `http://localhost:4000/api/${oldClassCode}`
+          );
           const oldClassDocId = resOld.data.class._id;
 
           await axios.put(
             `http://localhost:4000/api/classes/${oldClassDocId}/remove-teacher`
           );
         } catch (error) {
-          console.error("Gỡ cố vấn khỏi lớp cũ thất bại:", error.message);
+          console.error("Gỡ giáo viên khỏi lớp cũ thất bại:", error.message);
         }
       }
 
@@ -171,7 +175,7 @@ exports.updateUserProfile = async (req, res) => {
             teacher_id: userId,
           });
         } catch (error) {
-          console.error("Gán cố vấn vào lớp mới thất bại:", error.message);
+          console.error("Gán giáo viên vào lớp mới thất bại:", error.message);
         }
       }
     }
@@ -185,7 +189,6 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
-
 
 exports.getUserById = async (req, res) => {
   try {
@@ -409,7 +412,7 @@ exports.deleteAdvisor = async (req, res) => {
 
     const advisor = await User.findOne({ _id: userId, role: "advisor" });
     if (!advisor) {
-      return res.status(404).json({ message: "Không tìm thấy cố vấn" });
+      return res.status(404).json({ message: "Không tìm thấy giáo viên" });
     }
 
     const classServiceUrl =
@@ -422,13 +425,13 @@ exports.deleteAdvisor = async (req, res) => {
         await axios.put(
           `http://localhost:4000/api/classes/${classData._id}/remove-teacher`,
           {
-            reason: "Xóa cố vấn",
+            reason: "Xóa giáo viên",
           }
         );
       }
     } catch (err) {
       console.warn(
-        "Không tìm thấy lớp có cố vấn:",
+        "Không tìm thấy lớp có giáo viên:",
         err?.response?.data || err.message
       );
     }
@@ -436,9 +439,9 @@ exports.deleteAdvisor = async (req, res) => {
     await User.findByIdAndDelete(userId);
     await LoginInfo.findOneAndDelete({ user_id: userId });
 
-    return res.status(200).json({ message: "Xoá cố vấn thành công" });
+    return res.status(200).json({ message: "Xoá giáo viên thành công" });
   } catch (error) {
-    console.error("Lỗi khi xoá cố vấn:", error.message);
+    console.error("Lỗi khi xoá giáo viên:", error.message);
     return res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -466,7 +469,7 @@ exports.addStudentByAdmin = async (req, res) => {
     if (existingUser) {
       return res
         .status(400)
-        .json({ message: "Sinh viên đã tồn tại trong hệ thống" });
+        .json({ message: "Học sinh đã tồn tại trong hệ thống" });
     }
 
     const newUser = new User({
@@ -493,12 +496,12 @@ exports.addStudentByAdmin = async (req, res) => {
     await loginInfo.save();
 
     res.status(201).json({
-      message: "Thêm sinh viên thành công",
+      message: "Thêm học sinh thành công",
       student: savedUser,
     });
   } catch (error) {
     console.error("[ADD STUDENT ERROR]:", error.message);
-    res.status(500).json({ message: "Lỗi server khi thêm sinh viên" });
+    res.status(500).json({ message: "Lỗi server khi thêm học sinh" });
   }
 };
 
@@ -536,7 +539,7 @@ exports.addAdvisorByAdmin = async (req, res) => {
 
     const existed = await User.findOne({ $or: [{ email }, { tdt_id }] });
     if (existed) {
-      return res.status(400).json({ message: "Cố vấn đã tồn tại" });
+      return res.status(400).json({ message: "giáo viên đã tồn tại" });
     }
 
     const newUser = new User({
@@ -567,18 +570,18 @@ exports.addAdvisorByAdmin = async (req, res) => {
     } catch (err) {
       console.error("[CLASS SERVICE ERROR]:", err.message);
       return res.status(500).json({
-        message: "Tạo cố vấn thành công, nhưng gán lớp thất bại",
+        message: "Tạo giáo viên thành công, nhưng gán lớp thất bại",
         advisor: savedUser,
       });
     }
 
     res.status(200).json({
-      message: "Thêm cố vấn thành công",
+      message: "Thêm giáo viên thành công",
       advisor: savedUser,
     });
   } catch (err) {
     console.error("[ADD ADVISOR ERROR]:", err.message);
-    res.status(500).json({ message: "Lỗi server khi thêm cố vấn" });
+    res.status(500).json({ message: "Lỗi server khi thêm giáo viên" });
   }
 };
 
@@ -593,9 +596,9 @@ exports.fullDeleteStudent = async (req, res) => {
     await User.findByIdAndDelete(studentId);
     await LoginInfo.findOneAndDelete({ user_id: studentId });
 
-    res.status(200).json({ message: "Đã xoá sinh viên khỏi lớp và hệ thống" });
+    res.status(200).json({ message: "Đã xoá học sinh khỏi lớp và hệ thống" });
   } catch (error) {
-    console.error("Lỗi xoá sinh viên:", error.message);
-    res.status(500).json({ message: "Không thể xoá sinh viên" });
+    console.error("Lỗi xoá học sinh:", error.message);
+    res.status(500).json({ message: "Không thể xoá học sinh" });
   }
 };
