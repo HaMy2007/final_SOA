@@ -7,8 +7,9 @@ import { StudentInfoProvider } from "./context/StudentInfoContext";
 import AdvisorInfor from "./pages/admin/AdvisorInfo";
 import ClassDetail from "./pages/admin/ClassDetail";
 import ClassManagement from "./pages/admin/ClassManagement";
+import DepartmentDetail from "./pages/admin/DepartmentDetail";
+import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import ChangePassword from "./pages/ChangePassword";
-import DepartmentManagement from "./pages/DepartmentManagement";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import Forum from "./pages/Forum";
 import Home from "./pages/Home";
@@ -56,6 +57,10 @@ const App = () => {
             element={<StudentScoreDetail />}
           />
           <Route path="department" element={<DepartmentManagement />} />
+          <Route
+            path="department/:departmentId"
+            element={<DepartmentDetail />}
+          />
           <Route
             path="students"
             element={
