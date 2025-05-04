@@ -6,9 +6,9 @@ const { authenticateToken, authorizeRoles } = require("../../../middleware/auth"
 
 router.get('/advisors', userController.getAllAdvisors);
 router.post('/batch', userController.getUsersByIds);
-router.put('/:id', userController.updateUserProfile);
+router.put('/:id', authenticateToken, authorizeRoles('admin', 'advisor'), userController.updateUserProfile);
 router.get('/:id', userController.getUserById);
-router.post('/import-file', upload.single('file'), userController.importUsersFromFile);  //admin import user
+router.post('/import-file', upload.single('file'), authenticateToken, authorizeRoles('admin'), userController.importUsersFromFile);  //admin import user
 router.post('/get-ids-by-emails', userController.getUserIdsByEmails);  //lay id của user thông qua email
 router.post("/import-advisors", upload.single("file"), authenticateToken, authorizeRoles("admin"), userController.importAdvisors); //admin import cố vấn
 router.get('/tdt/:tdt_id', userController.getUserByTdtId);

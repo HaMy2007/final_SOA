@@ -65,10 +65,10 @@ export const menuItems: MenuItem[] = [
     allowedRoles: ["advisor", "admin"],
   },
   {
-    path: "dashboard",
-    label: "Dashboard",
+    path: "department",
+    label: "Quản lý phòng ban",
     icon: MdOutlineDashboardCustomize,
-    allowedRoles: ["advisor", "admin"],
+    allowedRoles: ["admin"],
   },
   {
     path: "advisorInfo",

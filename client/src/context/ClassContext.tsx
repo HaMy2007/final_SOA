@@ -49,14 +49,14 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
       (prev: ClassTypes) =>
         ({
           ...prev,
-          class_name: e.target.value,
+          class_id: e.target.value,
         } as ClassTypes)
     );
   };
 
   const handleCreateClass = async () => {
-    if (!studentClass?.class_name.trim()) {
-      setError("Tên lớp không được để trống!");
+    if (!studentClass?.class_id.trim()) {
+      setError("Mã lớp không được để trống!");
       return;
     }
     setError("");
@@ -64,7 +64,7 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post("http://localhost:4000/api/classes", {
-        class_name: studentClass.class_name.trim(),
+        class_id: studentClass.class_id.trim(),
       },
       {
         headers: {
@@ -78,7 +78,7 @@ export const ClassProvider = ({ children }: ClassProviderProps) => {
   
       setStudentClass((prev) => ({
         ...prev,
-        class_name: "",
+        class_id: "",
       }));
       Swal.fire({
         icon: "success",

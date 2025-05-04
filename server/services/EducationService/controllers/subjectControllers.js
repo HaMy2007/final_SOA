@@ -79,9 +79,8 @@ exports.getSubjectsByIds = async (req, res) => {
     for (const s of subjects) {
       const name = s['subject_name']?.toString().trim() || s['﻿subject_name']?.toString().trim();
       const code = s['subject_code']?.toString().trim();
-      const credit = Number(String(s['credit']).trim());
     
-      if (!name || !code || isNaN(credit)) {
+      if (!name || !code) {
         console.log('[BỎ QUA]', s);
         continue;
       }
@@ -95,7 +94,6 @@ exports.getSubjectsByIds = async (req, res) => {
       const newSubject = new Subject({
         subject_name: name,
         subject_code: code,
-        credit
       });
   
       const saved = await newSubject.save();

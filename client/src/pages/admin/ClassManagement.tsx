@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import classImg from "../../assets/classImg.jpg";
 import { useClass } from "../../context/ClassContext";
-
+import React, { useState } from "react";
 
 type Props = {};
-
 const ClassManagement = (props: Props) => {
   const {
     classes,
@@ -16,23 +15,46 @@ const ClassManagement = (props: Props) => {
     error,
     setError,
   } = useClass();
+  const [selectedGrade, setSelectedGrade] = useState<string>("Tất cả");
+  const filteredClasses = classes.filter((classItem) => {
+    if (selectedGrade === "Tất cả") return true;
+    return classItem.class_name.startsWith(selectedGrade);
+  });
 
   return (
     <div className="w-full h-full p-4 overflow-y-auto">
       <div className="w-9/12 mx-auto relative">
+      <div className="flex justify-between items-center mb-4">
         <button
-          className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-md mb-4"
+          className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-md"
           onClick={() => setIsFormVisible(true)}
         >
           Tạo lớp
         </button>
 
+        <div className="flex items-center gap-2">
+          <label htmlFor="gradeFilter" className="font-medium">
+            Lọc theo khối:
+          </label>
+          <select
+            id="gradeFilter"
+            className="border p-2 rounded"
+            value={selectedGrade}
+            onChange={(e) => setSelectedGrade(e.target.value)}
+          >
+            <option value="Tất cả">Tất cả</option>
+            <option value="Khối 10">Khối 10</option>
+            <option value="Khối 11">Khối 11</option>
+            <option value="Khối 12">Khối 12</option>
+          </select>
+        </div>
+      </div>
         {isFormVisible && (
           <div className="p-4 border rounded shadow mb-4 w-2/3 bg-white">
             <input
               type="text"
               placeholder="Nhập tên lớp"
-              value={studentClass?.class_name}
+              value={studentClass?.class_id}
               onChange={handleClassNameChange}
               className="border p-2 rounded-md w-full "
             />
@@ -57,7 +79,7 @@ const ClassManagement = (props: Props) => {
           </div>
         )}
         <div className="grid grid-cols-3 gap-5">
-          {classes.map((classItem) => (
+        {filteredClasses.map((classItem) => (
             <Link
               to={`${classItem.class_id}`}
               className="overflow-hidden p-4 h-40 border rounded shadow bg-white hover:bg-gray-100 text-blue-800 cursor-pointer"
@@ -65,7 +87,7 @@ const ClassManagement = (props: Props) => {
             >
               <div className="flex flex-col gap-2">
                 <h3 className="font-bold bg-blue-100 text-center rounded-sm">
-                  {classItem.class_name}
+                  {classItem.class_name + " - " + classItem.class_id}
                 </h3>
                 <div className="overflow-hidden rounded">
                   <img
