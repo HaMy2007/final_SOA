@@ -21,6 +21,6 @@ const ScoreboardSchema = new Schema(
         timestamps: true
     }
 );
-ScoreboardSchema.index({ user_id: 1, semester_id: 1 }, { unique: true });
+// ScoreboardSchema.index({ user_id: 1, semester_id: 1 }, { unique: true });
 
 module.exports = mongoose.model('scoreboards', ScoreboardSchema);
