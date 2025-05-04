@@ -239,7 +239,6 @@ exports.importStudentScores = async (req, res) => {
             // Create and save new score
             const newScore = new Score({
               user_id: user._id,
-              user_id: user._id,
               score: parseFloat(score),
               category: normalizedCategory,
               subject_id: subject._id,
