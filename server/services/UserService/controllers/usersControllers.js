@@ -358,11 +358,17 @@ async function insertUsers(users, res) {
       trimmedRole = role.trim().toLowerCase();
     }
 
+    let advisor_type = undefined;
+    if (trimmedRole === 'advisor') {
+      advisor_type = ['subject_teacher'];
+    }
+
     const newUser = new User({
       email: email.trim(),
       address: address?.trim() || "",
       name: name.trim(),
       role: trimmedRole,
+      advisor_type: trimmedRole === 'advisor' ? ['subject_teacher'] : undefined,
       tdt_id: tdt_id.trim(),
       gender: gender.trim(),
       phone_number: phone_number.trim(),
@@ -548,6 +554,7 @@ exports.addAdvisorByAdmin = async (req, res) => {
       gender,
       phone_number,
       address,
+      advisor_type: ['subject_teacher'],
       date_of_birth: new Date(date_of_birth),
       email,
       role: "advisor",
@@ -600,5 +607,64 @@ exports.fullDeleteStudent = async (req, res) => {
   } catch (error) {
     console.error("Lỗi xoá học sinh:", error.message);
     res.status(500).json({ message: "Không thể xoá học sinh" });
+  }
+};
+
+exports.addHomeroomTeacher = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+    if (user.role !== 'advisor') {
+      return res.status(400).json({ message: "Người dùng không phải là advisor" });
+    }
+
+    if (!user.advisor_type.includes('homeroom_teacher')) {
+      user.advisor_type.push('homeroom_teacher');
+      await user.save();
+    }
+
+    res.status(200).json({ message: "Đã thêm homeroom_teacher vào advisor_type", user });
+  } catch (err) {
+    console.error("Lỗi khi cập nhật advisor_type:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.removeHomeroomTeacher = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+    if (user.role !== 'advisor') {
+      return res.status(400).json({ message: "Người dùng không phải là advisor" });
+    }
+
+    if (user.advisor_type.includes('homeroom_teacher')) {
+      user.advisor_type = user.advisor_type.filter(type => type !== 'homeroom_teacher');
+      await user.save();
+    }
+
+    res.status(200).json({
+      message: "Đã xóa homeroom_teacher khỏi advisor_type (nếu có)",
+      user,
+    });
+  } catch (err) {
+    console.error("Lỗi khi cập nhật advisor_type:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };

@@ -42,3 +42,20 @@ exports.allowStudentAndAdvisorOnlyAndOwner = (req, res, next) => {
       message: "Chỉ giáo viên, học sinh và đúng người đăng mới được phép",
     });
 };
+
+exports.checkAdvisorType = (requiredTypes) => {
+  return (req, res, next) => {
+    if (req.user.role !== 'advisor') {
+      return res.status(403).json({ message: 'Không phải advisor' });
+    }
+
+    const advisorTypes = req.user.advisor_type || [];
+
+    const hasPermission = requiredTypes.some(type => advisorTypes.includes(type));
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Không đủ quyền advisor' });
+    }
+
+    next();
+  };
+};
