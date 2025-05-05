@@ -143,3 +143,28 @@ exports.addTeacherToDepartment = async (req, res) => {
       return res.status(500).json({ message: "Lỗi server khi thêm giáo viên" });
     }
 };
+
+exports.removeTeacherFromSubject = async (req, res) => {
+  try {
+      const { departmentId, subjectId, userId } = req.params;
+
+      const department = await Department.findOneAndUpdate(
+          { _id: departmentId, "members.subject_id": subjectId },
+          {
+              $pull: {
+                  "members.$.users": userId
+              }
+          },
+          { new: true }
+      );
+
+      if (!department) {
+          return res.status(404).json({ message: "Department or subject not found." });
+      }
+
+      res.json({ message: "Teacher removed from subject successfully.", department });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error." });
+  }
+};
