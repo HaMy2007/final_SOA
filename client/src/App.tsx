@@ -9,6 +9,7 @@ import ClassDetail from "./pages/admin/ClassDetail";
 import ClassManagement from "./pages/admin/ClassManagement";
 import DepartmentDetail from "./pages/admin/DepartmentDetail";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
+import TeacherDetailInDepartment from "./pages/admin/TeacherDetailInDepartment";
 import ChangePassword from "./pages/ChangePassword";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import Forum from "./pages/Forum";
@@ -60,6 +61,10 @@ const App = () => {
           <Route
             path="department/:departmentId"
             element={<DepartmentDetail />}
+          />
+          <Route
+            path="department/:departmentId/:teacherId"
+            element={<TeacherDetailInDepartment />}
           />
           <Route
             path="students"
