@@ -7,7 +7,6 @@ import axios from "axios";
 const DepartmentDetail = () => {
   const { departmentId } = useParams();
   const {
-    removeDepartmentTeacher,
     searchDepartmentTeachers,
   } = useDepartment();
 
@@ -60,6 +59,22 @@ const DepartmentDetail = () => {
     } catch (err: any) {
       console.error("Lỗi khi thêm giáo viên:", err);
       alert(err.response?.data?.message || "Thêm giáo viên thất bại.");
+    }
+  };  
+
+  const handleRemoveTeacher = async (teacherId: string, subjectId: string) => {
+    try {
+      await axios.delete(`http://localhost:4001/api/departments/${departmentId}/subjects/${subjectId}/users/${teacherId}`, {
+      });
+  
+      alert("Xóa giáo viên thành công!");
+  
+      // Reload dữ liệu tổ
+      const res = await axios.get(`http://localhost:4001/api/departments/${departmentId}`);
+      setDepartmentInfo(res.data);
+    } catch (err: any) {
+      console.error("Lỗi khi xóa giáo viên:", err);
+      alert(err.response?.data?.message || "Xóa giáo viên thất bại.");
     }
   };  
 
@@ -180,9 +195,9 @@ const DepartmentDetail = () => {
                   <td className="py-2 px-4 text-center">
                     <button
                       onClick={() =>
-                        removeDepartmentTeacher(
+                        handleRemoveTeacher(
                           user._id,
-                          Number(departmentId)
+                          m.subject_id,
                         )
                       }
                       className="text-red-500 hover:text-red-700"
