@@ -9,13 +9,14 @@ const DepartmentSchema = new Schema(
         phone_number: { type: String, required: true },
         officeLocation: { type: String, required: true },
         headofDepartment:  { type: Schema.Types.ObjectId, ref: 'users' },
-        members:
-        [
-            { type: Schema.Types.ObjectId, ref: 'users' }
-        ],
-        subjects:
-        [
-            { type: Schema.Types.ObjectId, ref: 'subjects' }
+        members: [
+            {
+                subject_id: { type: Schema.Types.ObjectId, ref: 'subjects' },
+                subject_code: { type: String, require: true },
+                users: [
+                    { type: Schema.Types.ObjectId, ref: 'users' }
+                ]
+            }
         ],
     },
     {

@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MdDelete } from "react-icons/md";
 import { useParams } from "react-router-dom";
 import { useDepartment } from "../../context/DepartmentContext";
-import mockDepartments from "../../data/mockDepartments";
+import axios from "axios";
 
 const DepartmentDetail = () => {
   const { departmentId } = useParams();
   const {
-    addDepartmentTeacher,
     removeDepartmentTeacher,
     searchDepartmentTeachers,
   } = useDepartment();
+
+  const [departmentInfo, setDepartmentInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [newTeacherInfo, setNewTeacherInfo] = useState({
     email: "",
@@ -18,25 +20,56 @@ const DepartmentDetail = () => {
   });
   const [searchTerm, setSearchTerm] = useState("");
 
-  const departmentInfo = mockDepartments.find(
-    (dept) => dept.id === Number(departmentId)
-  );
+  useEffect(() => {
+    if (!departmentId) return;
+    setLoading(true);
 
-  const handleAddTeacher = () => {
-    if (departmentId) {
-      addDepartmentTeacher(
-        newTeacherInfo.email,
-        newTeacherInfo.subject,
-        Number(departmentId)
-      );
-      setNewTeacherInfo({ email: "", subject: "" });
+    axios
+      .get(`http://localhost:4001/api/departments/${departmentId}`)
+      .then((res) => {
+        setDepartmentInfo(res.data);
+      })
+      .catch((err) => {
+        console.error("Lỗi khi lấy chi tiết tổ:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [departmentId]);
+
+  const handleAddTeacher = async () => {
+    if (!newTeacherInfo.email || !newTeacherInfo.subject) {
+      alert("Vui lòng nhập email và chọn môn học.");
+      return;
     }
-  };
+  
+    try {
+      await axios.post(`http://localhost:4001/api/departments/${departmentId}/add-teacher`, {
+        email: newTeacherInfo.email.trim(),
+        subject_id: newTeacherInfo.subject,
+      });
+  
+      alert("Thêm giáo viên thành công!");
+  
+      // Sau khi thêm xong, load lại dữ liệu tổ
+      const res = await axios.get(`http://localhost:4001/api/departments/${departmentId}`);
+      setDepartmentInfo(res.data);
+  
+      // Reset form
+      setNewTeacherInfo({ email: "", subject: "" });
+    } catch (err: any) {
+      console.error("Lỗi khi thêm giáo viên:", err);
+      alert(err.response?.data?.message || "Thêm giáo viên thất bại.");
+    }
+  };  
 
   const filteredTeachers = searchDepartmentTeachers(
     searchTerm,
     Number(departmentId)
   );
+
+  if (loading) return <div className="p-4 text-center">Đang tải dữ liệu...</div>;
+  if (!departmentInfo) return <div className="p-4 text-center">Không tìm thấy tổ.</div>;
 
   return (
     <div className="w-full h-full p-4 overflow-y-auto">
@@ -48,12 +81,12 @@ const DepartmentDetail = () => {
             </h2>
             <p className="mt-2">
               Các môn học:{" "}
-              {departmentInfo.subjects.map((subject) => (
+              {departmentInfo.members.map((m: any) => (
                 <span
-                  key={subject}
+                  key={m.subject_id}
                   className="inline-block bg-blue-100 rounded-full px-3 py-1 text-sm font-semibold text-blue-700 mr-2"
                 >
-                  {subject}
+                  {m.subject_name}
                 </span>
               ))}
             </p>
@@ -82,9 +115,9 @@ const DepartmentDetail = () => {
               className="border p-2 rounded-md"
             >
               <option value="">Chọn môn dạy</option>
-              {departmentInfo?.subjects.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
+              {departmentInfo.members.map((m: any) => (
+                <option key={m.subject_id} value={m.subject_id}>
+                  {m.subject_name}
                 </option>
               ))}
             </select>
@@ -129,18 +162,26 @@ const DepartmentDetail = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTeachers.map((dt) => (
-                <tr key={dt.teacher.id}>
-                  <td className="py-2 px-4">{dt.teacher.id}</td>
-                  <td className="py-2 px-4">{dt.teacher.name}</td>
-                  <td className="py-2 px-4">{dt.teacher.email}</td>
-                  <td className="py-2 px-4">{dt.teacher.phone_number}</td>
-                  <td className="py-2 px-4">{dt.subject}</td>
+            {departmentInfo.members.map((m: any) =>
+              m.users
+                .filter((u: any) =>
+                  u.name.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((user: any) => (
+                <tr key={user._id}>
+                  <td className="py-2 px-4">{user.tdt_id}</td>
+                  <td className="py-2 px-4">{user.name}</td>
+                  <td className="py-2 px-4">{user.email}</td>
+                  <td className="py-2 px-4">{
+                  user.phone_number.startsWith("0")
+                    ? user.phone_number
+                    : "0" + user.phone_number}</td>
+                  <td className="py-2 px-4">{m.subject_name}</td>
                   <td className="py-2 px-4 text-center">
                     <button
                       onClick={() =>
                         removeDepartmentTeacher(
-                          dt.teacher.id,
+                          user._id,
                           Number(departmentId)
                         )
                       }
@@ -150,7 +191,7 @@ const DepartmentDetail = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

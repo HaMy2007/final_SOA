@@ -9,7 +9,23 @@ const UserSchema = new Schema(
       enum: ["student", "advisor", "admin"],
       required: true,
     },
-    isHomeTeacher: { type: boolean },
+    advisor_type: {
+      type: [
+        {
+          type: String,
+          enum: ["subject_teacher", "homeroom_teacher"],
+        },
+      ],
+      required: function () {
+        return this.role === "advisor";
+      },
+      validate: {
+        validator: function (v) {
+          return this.role !== "advisor" || (Array.isArray(v) && v.length > 0);
+        },
+        message: "advisor_type must not be empty if role is advisor",
+      },
+    },
     gender: { type: String, enum: ["male", "female", "other"], required: true },
     phone_number: { type: String, required: true },
     parent_number: { type: String },

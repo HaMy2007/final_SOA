@@ -27,21 +27,40 @@ exports.login = async (req, res) => {
         return res.status(404).json({ message: 'Không tìm thấy người dùng' });
       }
   
-      const token = jwt.sign(
-        { id: user._id, role: user.role, tdt_id: user.tdt_id, name: user.name },
-        process.env.JWT_SECRET,
-        { expiresIn: '1h' }
-      );
+      // const token = jwt.sign(
+      //   { id: user._id, role: user.role, tdt_id: user.tdt_id, name: user.name },
+      //   process.env.JWT_SECRET,
+      //   { expiresIn: '1h' }
+      // );
+
+      const tokenPayload = {
+        id: user._id,
+        role: user.role,
+        tdt_id: user.tdt_id,
+        name: user.name,
+      };
+  
+      if (user.role === 'advisor') {
+        tokenPayload.advisor_type = user.advisor_type;
+      }
+  
+      const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+      const userResponse = {
+        id: user._id,
+        tdt_id: user.tdt_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      };
+  
+      if (user.role === 'advisor') {
+        userResponse.advisor_type = user.advisor_type;
+      }
 
       res.status(200).json({
         token,
-        user: {
-          id: user._id,
-          tdt_id: user.tdt_id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
+        user: userResponse
       });
     } catch (error) {
       console.error('[LOGIN ERROR]', error.message);

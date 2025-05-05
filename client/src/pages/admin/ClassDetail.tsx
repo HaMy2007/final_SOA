@@ -199,7 +199,7 @@ const ClassDetail = (props: Props) => {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="font-bold">
-                giáo viên hiện tại: {classAdvisor.name}
+                Giáo viên chủ nhiệm: {classAdvisor.name}
               </h3>
               <p>
                 <strong>Email:</strong> {classAdvisor.email}

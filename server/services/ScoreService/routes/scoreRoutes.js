@@ -7,5 +7,6 @@ const { verifyTokenViaUserService } = require("../middlewares/authViaUserService
 router.get('/:id/scores-by-semester', scoreController.getStudentScoresGroupedBySemester);
 router.get('/:id/scores', scoreController.getStudentScoresBySemester);
 router.post('/import-scores', verifyTokenViaUserService, upload.single('file'), scoreController.importStudentScores);
+router.put("/scores/update", scoreController.updateScore);
 
 module.exports = router;
