@@ -2,10 +2,7 @@ const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/usersControllers");
 const upload = require("../middlewares/upload");
-const {
-  authenticateToken,
-  authorizeRoles,
-} = require("../../../middleware/auth");
+const { authenticateToken,  authorizeRoles, } = require("../../../middleware/auth");
 
 router.get("/advisors", userController.getAllAdvisors);
 router.post("/batch", userController.getUsersByIds);

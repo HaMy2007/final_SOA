@@ -677,3 +677,77 @@ exports.addSubjectTeacherToClass = async (req, res) => {
     return res.status(500).json({ message: "Lỗi server khi thêm giáo viên vào lớp" });
   }
 };
+
+exports.getClassesByTdtId = async (req, res) => {
+  const { tdt_id } = req.params;
+
+  try {
+    const user = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`);
+    const userId = user.data._id;
+    
+    if (!userId) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng với tdt_id này" });
+    }
+
+    const classes = await Class.find({
+      subject_teacher: userId
+    })
+    return res.status(200).json(classes);
+  } catch (error) {
+    console.error("[ERROR] Lấy danh sách lớp theo tdt_id:", error.message);
+    return res.status(500).json({ message: "Lỗi server khi lấy lớp học" });
+  }
+};
+
+exports.addClassForTeacher = async (req, res) => {
+  const { class_id, teacher_id } = req.body;
+
+  if (!class_id || !teacher_id) {
+    return res.status(400).json({ message: "Thiếu class_id hoặc teacher_id" });
+  }
+
+  try {
+    const updatedClass = await Class.findOneAndUpdate(
+      { class_id }, // tìm theo class_id
+      { $addToSet: { subject_teacher: teacher_id } }, // thêm vào mảng nếu chưa có
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp" });
+    }
+
+    res.json(updatedClass);
+  } catch (err) {
+    console.error("Lỗi khi thêm giáo viên vào lớp:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.removeTeacherFromClass = async (req, res) => {
+  const { class_id, teacher_id } = req.body;
+
+  if (!class_id || !teacher_id) {
+    return res.status(400).json({ message: "Thiếu class_id hoặc teacher_id" });
+  }
+
+  try {
+    const updatedClass = await Class.findOneAndUpdate(
+      { _id: class_id },
+      { $pull: { subject_teacher: teacher_id } },
+      { new: true }
+    );
+
+    if (!updatedClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
+    return res.status(200).json({
+      message: "Đã xóa giáo viên khỏi lớp thành công",
+      data: updatedClass,
+    });
+  } catch (error) {
+    console.error("[LỖI] Xóa giáo viên khỏi lớp:", error.message);
+    return res.status(500).json({ message: "Lỗi server khi xóa giáo viên khỏi lớp" });
+  }
+};

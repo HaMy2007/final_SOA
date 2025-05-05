@@ -120,6 +120,17 @@ const DepartmentDetail = () => {
                 </span>
               ))}
             </p>
+            <p className="mt-2">
+              Tổ trưởng:{" "}
+              {departmentInfo.headofDepartmentInfo ? (
+                <span className="font-semibold text-blue-800">
+                  {departmentInfo.headofDepartmentInfo.name} (
+                  {departmentInfo.headofDepartmentInfo.email})
+                </span>
+              ) : (
+                <span className="text-gray-500 italic">Chưa có thông tin tổ trưởng</span>
+              )}
+            </p>
           </div>
         )}
 

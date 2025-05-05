@@ -181,3 +181,54 @@ exports.removeTeacherFromSubject = async (req, res) => {
       res.status(500).json({ message: "Server error." });
   }
 };
+
+exports.getSubjectOfTeacher = async (req, res) => {
+  const { tdt_id } = req.params;
+
+  try {
+    const userRes = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`);
+    const userId = userRes.data._id;
+
+    if (!userId) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng với tdt_id này" });
+    }
+
+    const departments = await Department.find({
+      "members.users": new mongoose.Types.ObjectId(userId)
+    }).lean();
+
+    const subjectsTemp = [];
+
+    for (const dept of departments) {
+      for (const member of dept.members) {
+        if (member.users.some(u => u.toString() === userId.toString())) {
+          subjectsTemp.push({
+            subject_id: member.subject_id,
+            subject_code: member.subject_code
+          });
+        }
+      }
+    }
+
+    const subjectCodes = [...new Set(subjectsTemp.map(s => s.subject_code))];
+
+    const subjectDocs = await Subject.find({
+      subject_code: { $in: subjectCodes }
+    }).lean();
+
+    const subjectMap = {};
+    subjectDocs.forEach(sub => {
+      subjectMap[sub.subject_code] = sub.subject_name;
+    });
+
+    const subjects = subjectsTemp.map(s => ({
+      ...s,
+      subject_name: subjectMap[s.subject_code] || "Không rõ"
+    }));
+
+    res.json(subjects);
+  } catch (err) {
+    console.error("Lỗi:", err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
