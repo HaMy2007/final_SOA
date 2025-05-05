@@ -10,21 +10,20 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
   try {
     const studentId = req.params.id;
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: "ID học sinh không hợp lệ" });
+      return res.status(400).json({ message: "ID sinh viên không hợp lệ" });
     }
 
     // Lấy tất cả scoreboard của sinh viên
-    const scoreboards = await Scoreboard.find({ user_id: studentId })
-      .populate({
-        path: 'subjects.scores',
-        model: 'scores'
-      });
+    const scoreboards = await Scoreboard.find({ user_id: studentId }).populate({
+      path: "subjects.scores",
+      model: "scores",
+    });
 
     if (!scoreboards.length) {
-      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+      return res.status(404).json({ message: "Không tìm thấy bảng điểm" });
     }
 
-    const semesters = await axios.get('http://localhost:4001/api/semesters');
+    const semesters = await axios.get("http://localhost:4001/api/semesters");
     const semesterMap = {};
     semesters.data.forEach((sem) => {
       semesterMap[sem._id] = sem.semester_name;
@@ -36,8 +35,8 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
       const semesterId = sb.semester_id.toString();
       if (!result[semesterId]) {
         result[semesterId] = {
-          name: semesterMap[semesterId] || 'Không rõ',
-          scores: []
+          name: semesterMap[semesterId] || "Không rõ",
+          scores: [],
         };
       }
 
@@ -55,7 +54,7 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Lỗi khi lấy điểm học sinh:", error.message);
+    console.error("Lỗi khi lấy điểm sinh viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -66,33 +65,33 @@ exports.getStudentScoresBySemester = async (req, res) => {
     const semesterId = req.query.semester_id;
 
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: "ID học sinh không hợp lệ" });
+      return res.status(400).json({ message: "ID sinh viên không hợp lệ" });
     }
 
     const filter = { user_id: studentId };
     if (semesterId) {
       if (!mongoose.Types.ObjectId.isValid(semesterId)) {
-        return res.status(400).json({ message: 'ID học kỳ không hợp lệ' });
+        return res.status(400).json({ message: "ID học kỳ không hợp lệ" });
       }
       filter.semester_id = semesterId;
     }
 
     const scoreboards = await Scoreboard.find(filter).populate({
-      path: 'subjects.scores',
-      model: 'scores'
+      path: "subjects.scores",
+      model: "scores",
     });
 
     if (!scoreboards.length) {
-      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+      return res.status(404).json({ message: "Không tìm thấy bảng điểm" });
     }
 
     // Lấy danh sách môn học từ API
-    const subjectsRes = await axios.get('http://localhost:4001/api/subjects');
+    const subjectsRes = await axios.get("http://localhost:4001/api/subjects");
     const subjectMap = {};
-    subjectsRes.data.forEach(sub => {
+    subjectsRes.data.forEach((sub) => {
       subjectMap[sub._id] = {
         name: sub.subject_name,
-        code: sub.subject_code
+        code: sub.subject_code,
       };
     });
 
@@ -110,12 +109,12 @@ exports.getStudentScoresBySemester = async (req, res) => {
         }, {});
 
         allGrades.push({
-          subject_code: subject.code || 'Không rõ',
-          subject_name: subject.name || 'Không rõ',
+          subject_code: subject.code || "Không rõ",
+          subject_name: subject.name || "Không rõ",
           subject_id: subj.subject_id,
           ...scoreDetails,
           score: subj.subjectGPA,
-          semester_id: sb.semester_id
+          semester_id: sb.semester_id,
         });
       }
     }
@@ -127,10 +126,8 @@ exports.getStudentScoresBySemester = async (req, res) => {
       semesterGpa: semesterGPA,
       gpa: semesterGPA,
       status: scoreboards[0].status,
-      scores: allGrades
+      scores: allGrades,
     });
-
-
   } catch (error) {
     console.error("Lỗi khi lấy điểm theo học kỳ:", error.message);
     res.status(500).json({ message: "Lỗi server" });
@@ -210,13 +207,25 @@ exports.importStudentScores = async (req, res) => {
 
             if (!semester || !semester._id) {
               console.log(`❌ Không tìm thấy học kỳ với mã: ${semesterKey}`);
-              skippedStudents.push({ mssv, reason: `Không tìm thấy học kỳ với mã: ${semesterKey}` });
+              skippedStudents.push({
+                mssv,
+                reason: `Không tìm thấy học kỳ với mã: ${semesterKey}`,
+              });
               continue;
             }
 
-            if (!classInfo || !classInfo.advisor || classInfo.advisor?.id.toString() !== teacher_id.toString()) {
-              console.warn(`[SKIP] Sinh viên ${tdt_id} không thuộc lớp của cố vấn`);
-              skippedStudents.push({ tdt_id, reason: "Không thuộc lớp cố vấn đang đăng nhập" });
+            if (
+              !classInfo ||
+              !classInfo.advisor ||
+              classInfo.advisor?.id.toString() !== teacher_id.toString()
+            ) {
+              console.warn(
+                `[SKIP] Sinh viên ${tdt_id} không thuộc lớp của cố vấn`
+              );
+              skippedStudents.push({
+                tdt_id,
+                reason: "Không thuộc lớp cố vấn đang đăng nhập",
+              });
               continue;
             }
 
@@ -345,7 +354,7 @@ exports.importStudentScores = async (req, res) => {
         if (inserted.length === 0) {
           return res.status(400).json({
             message:
-              "Tải lên thất bại: Tất cả học sinh đều không thuộc lớp của giáo viên.",
+              "Tải lên thất bại: Tất cả sinh viên đều không thuộc lớp của cố vấn.",
             skipped: skippedStudents,
           });
         } else {
@@ -359,8 +368,10 @@ exports.importStudentScores = async (req, res) => {
         if (!committed) {
           await session.abortTransaction();
         }
-        console.error('[TRANSACTION ERROR]', err.message);
-        return res.status(500).json({ message: 'Lỗi server khi import điểm', error: err.message });
+        console.error("[TRANSACTION ERROR]", err.message);
+        return res
+          .status(500)
+          .json({ message: "Lỗi server khi import điểm", error: err.message });
       } finally {
         session.endSession();
         // Clean up uploaded file
@@ -380,20 +391,35 @@ function getStatusFromGPA(gpa) {
 exports.updateScore = async (req, res) => {
   const { user_id, subject_id, semester_id, scores } = req.body;
 
-  if (!user_id || !subject_id || !semester_id || !scores || typeof scores !== "object") {
-    return res.status(400).json({ message: "Thiếu dữ liệu hoặc dữ liệu không hợp lệ." });
+  if (
+    !user_id ||
+    !subject_id ||
+    !semester_id ||
+    !scores ||
+    typeof scores !== "object"
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Thiếu dữ liệu hoặc dữ liệu không hợp lệ." });
   }
 
   try {
     const updateResults = [];
-    let totalPoints = 0;  
-    let subjectScoreCount = 0;  
+    let totalPoints = 0;
+    let subjectScoreCount = 0;
 
     for (const [category, score] of Object.entries(scores)) {
-      let updated = await Score.findOne({ user_id, subject_id, semester_id, category });
+      let updated = await Score.findOne({
+        user_id,
+        subject_id,
+        semester_id,
+        category,
+      });
 
       if (!updated) {
-        const subjectRes = await axios.get(`http://localhost:4001/api/subjects/${subject_id}`);
+        const subjectRes = await axios.get(
+          `http://localhost:4001/api/subjects/${subject_id}`
+        );
         const subjectCode = subjectRes.data.subject_code;
 
         updated = await Score.create({
@@ -402,46 +428,57 @@ exports.updateScore = async (req, res) => {
           semester_id,
           category,
           score,
-          subject: subjectCode
+          subject: subjectCode,
         });
         updateResults.push(updated);
       } else {
         updated.score = score;
         updated.updatedAt = new Date();
         await updated.save();
-        updateResults.push(updated); 
+        updateResults.push(updated);
       }
 
       totalPoints += score;
       subjectScoreCount++;
     }
 
-    const fifteenPoints = scores['15p'] || 0;   
-    const oneTestPoints = scores['1tiet'] || 0;  
-    const midtermPoints = scores['giuaky'] || 0; 
-    const finalPoints = scores['cuoiky'] || 0;   
+    const fifteenPoints = scores["15p"] || 0;
+    const oneTestPoints = scores["1tiet"] || 0;
+    const midtermPoints = scores["giuaky"] || 0;
+    const finalPoints = scores["cuoiky"] || 0;
 
-    const subjectGPA = (fifteenPoints * 0.1) + (oneTestPoints * 0.2) + (midtermPoints * 0.2) + (finalPoints * 0.5);
+    const subjectGPA =
+      fifteenPoints * 0.1 +
+      oneTestPoints * 0.2 +
+      midtermPoints * 0.2 +
+      finalPoints * 0.5;
 
     const scoreboard = await Scoreboard.findOne({ user_id, semester_id });
     if (scoreboard) {
-      const subject = scoreboard.subjects.find(s => s.subject_id.toString() === subject_id.toString());
+      const subject = scoreboard.subjects.find(
+        (s) => s.subject_id.toString() === subject_id.toString()
+      );
       if (subject) {
         subject.subjectGPA = subjectGPA;
-    
+
         for (const updatedScore of updateResults) {
-          const exists = subject.scores.some(s => s.toString() === updatedScore._id.toString());
+          const exists = subject.scores.some(
+            (s) => s.toString() === updatedScore._id.toString()
+          );
           if (!exists) {
             subject.scores.push(updatedScore._id);
           }
         }
-    
-        const totalGPA = scoreboard.subjects.reduce((acc, subj) => acc + subj.subjectGPA, 0);
+
+        const totalGPA = scoreboard.subjects.reduce(
+          (acc, subj) => acc + subj.subjectGPA,
+          0
+        );
         scoreboard.gpa = totalGPA / scoreboard.subjects.length;
-    
+
         await scoreboard.save();
       }
-    }    
+    }
 
     res.json({
       message: "Cập nhật điểm và tính lại GPA thành công",

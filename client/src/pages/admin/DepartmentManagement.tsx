@@ -1,6 +1,6 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 
 type Department = {
   _id: string;
@@ -12,9 +12,9 @@ type Department = {
   headofDepartment: string;
   members: {
     subject_id: string;
-    subject_name?: string; 
+    subject_name?: string;
     subject_code: string;
-    users: string[]; 
+    users: string[];
   }[];
 };
 
@@ -23,7 +23,7 @@ const DepartmentManagement = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:4001/api/departments") 
+      .get("http://localhost:4001/api/departments")
       .then((res) => setDepartments(res.data))
       .catch((err) => console.error("Lỗi khi lấy dữ liệu tổ:", err));
   }, []);
