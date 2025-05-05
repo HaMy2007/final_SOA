@@ -10,21 +10,20 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
   try {
     const studentId = req.params.id;
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: "ID học sinh không hợp lệ" });
+      return res.status(400).json({ message: "ID sinh viên không hợp lệ" });
     }
 
     // Lấy tất cả scoreboard của sinh viên
-    const scoreboards = await Scoreboard.find({ user_id: studentId })
-      .populate({
-        path: 'subjects.scores',
-        model: 'scores'
-      });
+    const scoreboards = await Scoreboard.find({ user_id: studentId }).populate({
+      path: "subjects.scores",
+      model: "scores",
+    });
 
     if (!scoreboards.length) {
-      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+      return res.status(404).json({ message: "Không tìm thấy bảng điểm" });
     }
 
-    const semesters = await axios.get('http://localhost:4001/api/semesters');
+    const semesters = await axios.get("http://localhost:4001/api/semesters");
     const semesterMap = {};
     semesters.data.forEach((sem) => {
       semesterMap[sem._id] = sem.semester_name;
@@ -36,8 +35,8 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
       const semesterId = sb.semester_id.toString();
       if (!result[semesterId]) {
         result[semesterId] = {
-          name: semesterMap[semesterId] || 'Không rõ',
-          scores: []
+          name: semesterMap[semesterId] || "Không rõ",
+          scores: [],
         };
       }
 
@@ -55,7 +54,7 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
 
     res.status(200).json(result);
   } catch (error) {
-    console.error("Lỗi khi lấy điểm học sinh:", error.message);
+    console.error("Lỗi khi lấy điểm sinh viên:", error.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -66,28 +65,28 @@ exports.getStudentScoresBySemester = async (req, res) => {
     const semesterId = req.query.semester_id;
 
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ message: "ID học sinh không hợp lệ" });
+      return res.status(400).json({ message: "ID sinh viên không hợp lệ" });
     }
 
     const filter = { user_id: studentId };
     if (semesterId) {
       if (!mongoose.Types.ObjectId.isValid(semesterId)) {
-        return res.status(400).json({ message: 'ID học kỳ không hợp lệ' });
+        return res.status(400).json({ message: "ID học kỳ không hợp lệ" });
       }
       filter.semester_id = semesterId;
     }
 
     const scoreboards = await Scoreboard.find(filter).populate({
-      path: 'subjects.scores',
-      model: 'scores'
+      path: "subjects.scores",
+      model: "scores",
     });
 
     if (!scoreboards.length) {
-      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+      return res.status(404).json({ message: "Không tìm thấy bảng điểm" });
     }
 
     // Lấy danh sách môn học từ API
-    const subjectsRes = await axios.get('http://localhost:4001/api/subjects');
+    const subjectsRes = await axios.get("http://localhost:4001/api/subjects");
     const subjectMap = {};
     subjectsRes.data.forEach(sub => {
       subjectMap[sub._id] = {
@@ -115,7 +114,7 @@ exports.getStudentScoresBySemester = async (req, res) => {
           subject_id: subj.subject_id,
           ...scoreDetails,
           score: subj.subjectGPA,
-          semester_id: sb.semester_id
+          semester_id: sb.semester_id,
         });
       }
     }
@@ -210,7 +209,10 @@ exports.importStudentScores = async (req, res) => {
 
             if (!semester || !semester._id) {
               console.log(`❌ Không tìm thấy học kỳ với mã: ${semesterKey}`);
-              skippedStudents.push({ mssv, reason: `Không tìm thấy học kỳ với mã: ${semesterKey}` });
+              skippedStudents.push({
+                mssv,
+                reason: `Không tìm thấy học kỳ với mã: ${semesterKey}`,
+              });
               continue;
             }
 
@@ -345,7 +347,7 @@ exports.importStudentScores = async (req, res) => {
         if (inserted.length === 0) {
           return res.status(400).json({
             message:
-              "Tải lên thất bại: Tất cả học sinh đều không thuộc lớp của giáo viên.",
+              "Tải lên thất bại: Tất cả sinh viên đều không thuộc lớp của cố vấn.",
             skipped: skippedStudents,
           });
         } else {
