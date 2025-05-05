@@ -113,6 +113,19 @@ exports.addTeacherToDepartment = async (req, res) => {
         return res.status(404).json({ message: "Không tìm thấy người dùng với email này" });
       }
   
+      const existingDepartment = await Department.findOne({
+        _id: { $ne: departmentId }, // Loại trừ chính phòng ban hiện tại
+        members: {
+          $elemMatch: {
+            users: userId,
+          },
+        },
+      });
+
+      if (existingDepartment) {
+        return res.status(400).json({ message: "Giáo viên đã thuộc một tổ bộ môn khác" });
+      }
+      
       // Tìm tổ bộ môn
       const department = await Department.findById(departmentId);
       if (!department) {

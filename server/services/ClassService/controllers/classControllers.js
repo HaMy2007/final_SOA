@@ -646,3 +646,34 @@ exports.adminDeleteStudentFromClass = async (req, res) => {
     res.status(500).json({ message: "Không thể xóa học sinh khỏi lớp" });
   }
 };
+
+exports.addSubjectTeacherToClass = async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    const { classId } = req.params;
+
+    if (!user_id) {
+      return res.status(400).json({ message: "Thiếu user_id giáo viên" });
+    }
+
+    // Tìm lớp học
+    const classData = await Class.findById(classId);
+    if (!classData) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
+    // Kiểm tra xem giáo viên đã có trong danh sách chưa
+    if (classData.subject_teacher.some((u) => u.toString() === user_id)) {
+      return res.status(400).json({ message: "Giáo viên đã tồn tại trong lớp này" });
+    }
+
+    // Thêm giáo viên vào subject_teacher
+    classData.subject_teacher.push(user_id);
+    await classData.save();
+
+    return res.status(200).json({ message: "Thêm giáo viên vào lớp thành công" });
+  } catch (error) {
+    console.error("[Add Subject Teacher ERROR]", error.message);
+    return res.status(500).json({ message: "Lỗi server khi thêm giáo viên vào lớp" });
+  }
+};
