@@ -31,7 +31,7 @@ exports.getStudentScoresGroupedBySemester = async (req, res) => {
 
     const result = {};
 
-    fors (const sb of scoreboards) {
+    for (const sb of scoreboards) {
       const semesterId = sb.semester_id.toString();
       if (!result[semesterId]) {
         result[semesterId] = {

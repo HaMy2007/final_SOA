@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import mockDepartments from "../../data/mockDepartments";
 
-type Props = {};
-
-const DepartmentManagement = (props: Props) => {
+const DepartmentManagement = () => {
   return (
     <div className="w-full h-full p-4 overflow-y-auto bg-gray-50">
       <div className="w-9/12 mx-auto relative">
