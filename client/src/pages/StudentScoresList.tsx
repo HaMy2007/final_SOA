@@ -18,6 +18,8 @@ const StudentScoresList = () => {
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState("");
+  const [termStatusMap, setTermStatusMap] = useState<Record<string, string>>({});
+  const [semesters, setSemesters] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,7 +46,6 @@ const StudentScoresList = () => {
 
           setAvailableClasses(classRes.data);
 
-          // Gắn thêm class_id nếu học sinh có trong lớp
           const students = usersRes.data.filter(
             (u: any) => u.role === "student"
           );
@@ -66,6 +67,19 @@ const StudentScoresList = () => {
     };
 
     fetchData();
+
+    const fetchSemesters = async () => {
+      try {
+        const res = await axios.get("http://localhost:4001/api/semesters", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSemesters(res.data);
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách kỳ học:", err);
+      }
+    };
+    
+    fetchSemesters();    
   }, []);
 
   const fetchStudents = async (
@@ -124,32 +138,7 @@ const StudentScoresList = () => {
       setLoading(false);
     }
   };
-
-  // const fetchStudentsByClassId = async (classId: string) => {
-  //   try {
-  //     setSelectedClassId(classId);
-  //     if (!classId) {
-  //       const classRes = await axios.get("http://localhost:4000/api/classes", {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       });
-  //       const allStudentIds = classRes.data.flatMap((cls: any) => cls.class_member);
-  //       const allStudentsWithClassInfo = classRes.data.flatMap((cls: any) =>
-  //         cls.class_member.map((studentId: string) => ({ studentId, class_id: cls.class_id }))
-  //       );
-  //       fetchStudents(allStudentIds, allStudentsWithClassInfo);
-  //       return;
-  //     }
-
-  //     const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     setClassId(classId);
-  //     const studentIds = classRes.data?.students.map((s: any) => s._id);
-  //     fetchStudents(studentIds);
-  //   } catch (err) {
-  //     console.error("Lỗi khi lấy học sinh lớp:", err);
-  //   }
-  // };
+  
   const fetchStudentsByClassId = async (classId: string) => {
     try {
       setSelectedClassId(classId);
@@ -182,7 +171,6 @@ const StudentScoresList = () => {
       }
 
       if (classId === "no_class") {
-        // 👉 Học sinh chưa có lớp
         const [classRes, usersRes] = await Promise.all([
           axios.get("http://localhost:4000/api/classes", {
             headers: { Authorization: `Bearer ${token}` },
@@ -230,6 +218,22 @@ const StudentScoresList = () => {
       console.error("Lỗi khi lấy học sinh lớp:", err);
     }
   };
+
+  const fetchStatusByTerm = async (studentId: string, semesterId: string) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:4002/api/students/${studentId}/scores`,
+        {
+          params: { semester_id: semesterId },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return res.data.status;
+    } catch (err) {
+      console.error("Lỗi khi lấy học lực theo kỳ:", err);
+      return "Chưa có";
+    }
+  };  
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -343,22 +347,27 @@ const StudentScoresList = () => {
               <th className="py-3 px-4 text-left">Họ và tên</th>
               <th className="py-3 px-4 text-left">Lớp</th>
               <th className="py-3 px-4 text-left">Mã định danh</th>
-              {/* <th className="py-3 px-4 text-left">Trạng thái</th> */}
               <td className="py-3 px-4">
                 <select
                   className="border rounded-md"
                   value={selectedTerm}
-                  onChange={(e) => {
-                    setSelectedTerm(e.target.value);
-                    // Gọi hàm để cập nhật trạng thái học sinh theo kỳ đã chọn
-                    // fetchStudentStatusByTerm(student._id, e.target.value);
+                  onChange={async (e) => {
+                    const semesterId = e.target.value;
+                    setSelectedTerm(semesterId);
+                    const newStatusMap: Record<string, string> = {};
+                    for (const student of filteredStudents) {
+                      const status = await fetchStatusByTerm(student._id, semesterId);
+                      newStatusMap[student._id] = status;
+                    }
+                    setTermStatusMap(newStatusMap);
                   }}
                 >
                   <option value="">Chọn kỳ</option>
-                  <option value="Kỳ 1">Kỳ 1</option>
-                  <option value="Kỳ 2">Kỳ 2</option>
-                  <option value="Kỳ 3">Kỳ 3</option>
-                  {/* Thêm các kỳ khác nếu cần */}
+                  {semesters.map((sem) => (
+                    <option key={sem._id} value={sem._id}>
+                      {sem.semester_name}
+                    </option>
+                  ))}
                 </select>
               </td>
               <th className="py-3 px-4 text-left">Ngày sinh</th>
@@ -366,8 +375,14 @@ const StudentScoresList = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredStudents.map((student) => (
-              <tr key={student._id} className="border-t hover:bg-gray-50">
+            {filteredStudents.map((student) => {
+              const statusToShow =
+                selectedTerm && termStatusMap[student._id]
+                  ? termStatusMap[student._id]
+                  : student.status;
+
+              return (
+                <tr key={student._id} className="border-t hover:bg-gray-50">
                 <td className="py-3 px-4">{student.name}</td>
                 <td className="py-3 px-4">
                   {student.class_id || classId
@@ -379,14 +394,14 @@ const StudentScoresList = () => {
                   {student.status ? (
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${getStatusClass(
-                        student.status
+                        statusToShow
                       )}`}
                     >
-                      {student.status}
+                      {statusToShow}
                     </span>
                   ) : (
                     <span className="text-gray-500 text-xs italic">
-                      Chưa có GPA
+                      Chưa có kết quả
                     </span>
                   )}
                 </td>
@@ -402,8 +417,10 @@ const StudentScoresList = () => {
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
+
         </table>
       </div>
     </div>

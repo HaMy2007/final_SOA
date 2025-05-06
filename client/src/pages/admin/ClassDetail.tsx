@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { mockListStudents } from "../../data/mockListStudent";
+import { MdDelete } from "react-icons/md";
 
 type Props = {};
 
@@ -15,6 +16,22 @@ const ClassDetail = (props: Props) => {
   const [classAdvisor, setClassAdvisor] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
+  const [teachers, setTeachers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await axios.get(`http://localhost:4000/api/classes/${classId}/subjects`);
+        setTeachers(res.data); // Lưu danh sách giáo viên
+      } catch (error) {
+        console.error("Lỗi khi lấy thông tin giáo viên:", error);
+      }
+    };
+  
+    if (classId) {
+      fetchTeachers();
+    }
+  }, [classId]);
 
   const handleAddAdvisorClick = async () => {
     if (!newAdvisorEmail) {
@@ -106,6 +123,39 @@ const ClassDetail = (props: Props) => {
       });
     }
   };
+
+  const handleRemoveTeacher = async (classId: string, teacherId: string) => {
+    try {
+      const token = localStorage.getItem("token");  
+      const res = await axios.put(
+        "http://localhost:4000/api/classes/remove-teacher",
+        {
+          class_id: classId,
+          teacher_id: teacherId,  
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, 
+          },
+        }
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Thành công",
+        text: "Đã xoá giáo viên khỏi lớp!",
+      });
+
+      // const resdt = await axios.get(`http://localhost:4000/api/classes/${classId}/subjects`);
+      // setTeachers(resdt.data);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể xoá giáo viên khỏi lớp.",
+      });
+    }
+  };  
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -259,7 +309,51 @@ const ClassDetail = (props: Props) => {
           </div>
         )}
 
-        <table className="min-w-full border-collapse border border-gray-300 bg-white">
+        <table className="min-w-full border-collapse border border-gray-300 bg-white mt-5">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="text-base border border-gray-300 p-2">Họ và tên</th>
+              <th className="text-base border border-gray-300 p-2">Mã định danh</th>
+              <th className="text-base border border-gray-300 p-2">Email</th>
+              <th className="text-base border border-gray-300 p-2">Số điện thoại</th>
+              <th className="text-base border border-gray-300 p-2">Môn dạy</th>
+              <th className="text-base border border-gray-300 p-2">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teachers.map((teacher) => (
+              <tr key={teacher.teacher_id} className="hover:bg-gray-100">
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  {teacher.teacher_name}
+                </td>
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  {teacher.tdt_id}
+                </td>
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  {teacher.email}
+                </td>
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  {teacher.phone_number?.startsWith("0")
+                    ? teacher.phone_number
+                    : "0" + teacher.phone_number}
+                </td>
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  {teacher.subject_name}
+                </td>
+                <td className="text-center border text-sm border-gray-300 p-4">
+                  <button
+                      onClick={() => handleRemoveTeacher(classInfo._id, teacher.teacher_id)}
+                      className="cursor-pointer text-red-500 text-xl hover:text-red-700"
+                  >
+                  <MdDelete />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <table className="min-w-full border-collapse border border-gray-300 bg-white mt-5">
           <thead className="bg-gray-200">
             <tr>
               <th className="text-base border border-gray-300 p-2">

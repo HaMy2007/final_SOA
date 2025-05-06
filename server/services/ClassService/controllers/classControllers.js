@@ -688,27 +688,111 @@ exports.getClassesByTdtId = async (req, res) => {
   }
 };
 
+// exports.addClassForTeacher = async (req, res) => {
+//   const { class_id, teacher_id } = req.body;
+
+//   if (!class_id || !teacher_id) {
+//     return res.status(400).json({ message: "Thiếu class_id hoặc teacher_id" });
+//   }
+
+//   try {
+//     const updatedClass = await Class.findOneAndUpdate(
+//       { class_id }, // tìm theo class_id
+//       { $addToSet: { subject_teacher: teacher_id } }, // thêm vào mảng nếu chưa có
+//       { new: true }
+//     );
+
+//     if (!updatedClass) {
+//       return res.status(404).json({ message: "Không tìm thấy lớp" });
+//     }
+
+//     res.json(updatedClass);
+//   } catch (err) {
+//     console.error("Lỗi khi thêm giáo viên vào lớp:", err);
+//     res.status(500).json({ message: "Lỗi server" });
+//   }
+// };
+
 exports.addClassForTeacher = async (req, res) => {
-  const { class_id, teacher_id } = req.body;
+  const { class_id, teacher_id } = req.body; 
 
   if (!class_id || !teacher_id) {
     return res.status(400).json({ message: "Thiếu class_id hoặc teacher_id" });
   }
 
   try {
-    const updatedClass = await Class.findOneAndUpdate(
-      { class_id }, // tìm theo class_id
-      { $addToSet: { subject_teacher: teacher_id } }, // thêm vào mảng nếu chưa có
-      { new: true }
-    );
+    // 1. Lấy thông tin giáo viên từ UserService
+    const teacherRes = await axios.get(`http://localhost:4003/api/users/${teacher_id}`);
+    const teacher = teacherRes.data;
+    const tdt_id = teacher.tdt_id;
 
-    if (!updatedClass) {
+    // 2. Lấy danh sách môn giáo viên dạy từ DepartmentService
+    const subjectRes = await axios.get(`http://localhost:4001/api/departments/${tdt_id}/subjects`);
+    const teacherSubjects = subjectRes.data; // [{ subject_code, subject_id }]
+
+    if (!Array.isArray(teacherSubjects)) {
+      return res.status(400).json({ message: "Không lấy được danh sách môn học của giáo viên" });
+    }
+
+    // 3. Lấy thông tin lớp từ ClassService (service hiện tại)
+    const classRes = await axios.get(`http://localhost:4000/api/${class_id}`);
+    const foundClass = classRes.data.class;
+
+    if (!foundClass) {
       return res.status(404).json({ message: "Không tìm thấy lớp" });
     }
 
-    res.json(updatedClass);
+    // 4. Lấy danh sách giáo viên hiện tại đã dạy lớp đó
+    const currentTeacherIds = foundClass.subject_teacher || [];
+
+    // 5. Gọi đến UserService để lấy danh sách thông tin giáo viên hiện tại
+    const existingTeachers = await Promise.all(
+      currentTeacherIds.map(id =>
+        axios.get(`http://localhost:4003/api/users/${id}`).then(res => res.data)
+      )
+    );
+
+    // 6. Gọi đến DepartmentService để lấy danh sách môn của từng giáo viên hiện tại
+    const existingSubjectsMap = new Map(); // key: subject_code, value: { subject_name, teacher_id }
+
+    for (const t of existingTeachers) {
+      const deptRes = await axios.get(`http://localhost:4001/api/departments/${t.tdt_id}/subjects`);
+      const subjects = deptRes.data;
+      subjects.forEach(sub => {
+        if (!existingSubjectsMap.has(sub.subject_code)) {
+          existingSubjectsMap.set(sub.subject_code, {
+            subject_name: sub.subject_name,
+            tdt_id: t.tdt_id,
+          });
+        }
+      });
+    }
+
+    // 7. Kiểm tra xem có môn nào trùng không
+    const conflicts = teacherSubjects.filter(sub => existingSubjectsMap.has(sub.subject_code));
+    if (conflicts.length > 0) {
+      const messages = conflicts.map(conflict => {
+        const existing = existingSubjectsMap.get(conflict.subject_code);
+        return `Môn học "${existing.subject_name}" của lớp "${class_id}" đã có người dạy (teacher_id: ${existing.tdt_id})`;
+      });
+
+      return res.status(400).json({ message: messages.join("; ") });
+    }
+
+    const objectIdTeacher = new mongoose.Types.ObjectId(teacher_id);
+
+    const updatedClass = await Class.findOneAndUpdate(
+      { class_id: class_id }, // dùng class_id (string)
+      { $addToSet: { subject_teacher: objectIdTeacher } },
+      { new: true }
+    );    
+
+    res.status(200).json({
+      message: "Gán giáo viên vào lớp thành công",
+      updatedClass,
+    });
   } catch (err) {
-    console.error("Lỗi khi thêm giáo viên vào lớp:", err);
+    console.error("Lỗi khi phân công giáo viên:", err.message);
     res.status(500).json({ message: "Lỗi server" });
   }
 };
@@ -723,7 +807,8 @@ exports.removeTeacherFromClass = async (req, res) => {
   try {
     const updatedClass = await Class.findOneAndUpdate(
       { _id: class_id },
-      { $pull: { subject_teacher: teacher_id } },
+      // { $pull: { subject_teacher: teacher_id } },
+      { $pull: { subject_teacher: new mongoose.Types.ObjectId(teacher_id) } },
       { new: true }
     );
 
@@ -738,5 +823,61 @@ exports.removeTeacherFromClass = async (req, res) => {
   } catch (error) {
     console.error("[LỖI] Xóa giáo viên khỏi lớp:", error.message);
     return res.status(500).json({ message: "Lỗi server khi xóa giáo viên khỏi lớp" });
+  }
+};
+
+exports.getSubjectsOfClass = async (req, res) => {
+  try {
+    const classId = req.params.classId;
+    
+    // Lấy lớp từ cơ sở dữ liệu
+    const classData = await Class.findOne({ class_id: classId });
+
+    if (!classData) {
+      return res.status(404).json({ message: "Lớp không tồn tại" });
+    }
+
+    // Lấy tất cả _id của giáo viên từ trường subject_teacher
+    const teacherIds = classData.subject_teacher;
+
+    const subjects = [];
+    
+    // Lặp qua tất cả các giáo viên và gọi API của service User để lấy thông tin giáo viên
+    for (const teacherId of teacherIds) {
+      // Gọi API của service User để lấy thông tin giáo viên
+      const teacherRes = await axios.get(`http://localhost:4003/api/users/${teacherId}`);
+      const teacherData = teacherRes.data;
+
+      if (!teacherData) {
+        return res.status(404).json({ message: `Không tìm thấy thông tin giáo viên với ID: ${teacherId}` });
+      }
+
+      const { _id, name, tdt_id, phone_number, email } = teacherData;
+
+      // Gọi API lấy thông tin môn học của giáo viên từ service Department
+      const subjectsRes = await axios.get(`http://localhost:4001/api/departments/${tdt_id}/subjects`);
+      const teacherSubjects = subjectsRes.data;
+
+      // Thêm thông tin giáo viên và môn học vào mảng subjects
+      teacherSubjects.forEach(subject => {
+        subjects.push({
+          teacher_id: _id,
+          teacher_name: name,
+          tdt_id,
+          phone_number,
+          email,
+          subject_id: subject._id,
+          subject_name: subject.subject_name,
+          subject_code: subject.subject_code
+        });
+      });
+    }
+
+    // Trả về thông tin môn học và thông tin giáo viên trong lớp
+    res.status(200).json(subjects);
+
+  } catch (err) {
+    console.error("Lỗi:", err);
+    res.status(500).json({ message: "Lỗi server" });
   }
 };

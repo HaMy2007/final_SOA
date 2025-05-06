@@ -144,6 +144,21 @@ exports.importStudentScores = async (req, res) => {
   const inserted = [];
   const skippedStudents = [];
 
+  const teachingClassesRes = await axios.get(`http://localhost:4000/api/teacher/tdt/${req.user.tdt_id}`);
+  const teachingClasses = teachingClassesRes.data || [];
+
+  const allStudentIds = new Set();
+  teachingClasses.forEach(cls => {
+    cls.class_member.forEach(studentId => {
+      allStudentIds.add(studentId.toString());
+    });
+  });
+
+  // Lấy danh sách môn giáo viên được dạy
+  const subjectListRes = await axios.get(`http://localhost:4001/api/departments/${req.user.tdt_id}/subjects`);
+  const teacherSubjects = subjectListRes.data || [];
+  const teacherSubjectCodes = new Set(teacherSubjects.map((s) => s.subject_code));
+
   const categoryWeight = {
     "15p": 0.1,
     "1tiet": 0.2,
@@ -151,7 +166,6 @@ exports.importStudentScores = async (req, res) => {
     cuoiky: 0.5,
   };
 
-  // Category normalization mapping
   const categoryMapping = {
     "15phut": "15p",
     "15p": "15p",
@@ -170,10 +184,8 @@ exports.importStudentScores = async (req, res) => {
       try {
         for (const row of records) {
           try {
-            const { tdt_id, subject_code, score, category, semester_code } =
-              row;
-            const normalizedCategory =
-              categoryMapping[category.trim()] || category.trim();
+            const { tdt_id, subject_code, score, category, semester_code } =  row;
+            const normalizedCategory =  categoryMapping[category.trim()] || category.trim();
             const weight = categoryWeight[normalizedCategory];
 
             if (!weight) {
@@ -184,7 +196,26 @@ exports.importStudentScores = async (req, res) => {
               continue;
             }
 
-            // Fetch subject, user, semester, and class info
+            if (!teacherSubjectCodes.has(subject_code)) {
+              try {
+                const subjectRes = await axios.get(
+                  `http://localhost:4001/api/subjects/code/${subject_code}`
+                );
+                const subject = subjectRes.data;
+                skippedStudents.push({
+                  tdt_id,
+                  reason: `Bạn không có quyền nhập điểm cho môn học: ${subject.subject_name || subject_code}`,
+                });
+              } catch {
+                skippedStudents.push({
+                  tdt_id,
+                  reason: `Bạn không có quyền nhập điểm cho môn học: ${subject_code}`,
+                });
+              }
+              continue;
+            }
+            
+            
             const subjectRes = await axios.get(
               `http://localhost:4001/api/subjects/code/${subject_code}`
             );
@@ -200,36 +231,23 @@ exports.importStudentScores = async (req, res) => {
             );
             const semester = semesterRes.data;
 
-            const classRes = await axios.get(
-              `http://localhost:4000/api/students/${user._id}/advisor`
-            );
-            const classInfo = classRes.data;
-
             if (!semester || !semester._id) {
-              console.log(`❌ Không tìm thấy học kỳ với mã: ${semesterKey}`);
+              console.log(`Không tìm thấy học kỳ với mã: ${semester_code}`);
               skippedStudents.push({
                 mssv,
-                reason: `Không tìm thấy học kỳ với mã: ${semesterKey}`,
+                reason: `Không tìm thấy học kỳ với mã: ${semester_code}`,
               });
               continue;
             }
-
-            if (
-              !classInfo ||
-              !classInfo.advisor ||
-              classInfo.advisor?.id.toString() !== teacher_id.toString()
-            ) {
-              console.warn(
-                `[SKIP] Sinh viên ${tdt_id} không thuộc lớp của cố vấn`
-              );
+   
+            if (!allStudentIds.has(user._id.toString())) {
               skippedStudents.push({
                 tdt_id,
-                reason: "Không thuộc lớp cố vấn đang đăng nhập",
+                reason: "Sinh viên không nằm trong các lớp mà bạn đang dạy",
               });
               continue;
-            }
+            }            
 
-            // Check for existing score
             const existing = await Score.findOne({
               user_id: user._id,
               subject_id: subject._id,
@@ -245,7 +263,6 @@ exports.importStudentScores = async (req, res) => {
               continue;
             }
 
-            // Create and save new score
             const newScore = new Score({
               user_id: user._id,
               score: parseFloat(score),
@@ -286,7 +303,6 @@ exports.importStudentScores = async (req, res) => {
                 subjectGPA: 0,
               });
             } else {
-              // Nếu đã có, chỉ cần thêm score vào
               const alreadyIncluded = subjectEntry.scores.some(
                 (id) => id.toString() === savedScore._id.toString()
               );
@@ -323,7 +339,6 @@ exports.importStudentScores = async (req, res) => {
               );
             }
 
-            // Cập nhật semester GPA
             const validSubjects = scoreboard.subjects.filter(
               (s) => s.subjectGPA > 0
             );
@@ -352,18 +367,34 @@ exports.importStudentScores = async (req, res) => {
         committed = true;
 
         if (inserted.length === 0) {
-          return res.status(400).json({
-            message:
-              "Tải lên thất bại: Tất cả sinh viên đều không thuộc lớp của cố vấn.",
-            skipped: skippedStudents,
+          const allReasons = skippedStudents.map((s) => s.reason);
+        
+          const allAreWrongClass = allReasons.every((r) =>
+            r === "Sinh viên không nằm trong các lớp mà bạn đang dạy"
+          );
+        
+          const allAreInvalidSubject = allReasons.every((r) =>
+            r.startsWith("Bạn không có quyền nhập điểm cho môn học")
+          );
+        
+          return res.status(200).json({
+            message: allAreWrongClass
+              ? "Tải lên thất bại: Tất cả sinh viên đều không thuộc lớp mà bạn đang dạy."
+              : allAreInvalidSubject
+                ? "Tải lên thất bại: Bạn không có quyền nhập điểm cho các môn học trong file."
+                : "Tải lên thất bại: Không có điểm nào được nhập do dữ liệu không hợp lệ.",
+            skipped: groupSkippedByReason(skippedStudents),
+            warning: true,
+            insertedCount: 0,
           });
         } else {
           return res.status(200).json({
             message: `Đã import ${inserted.length} điểm.`,
             insertedCount: inserted.length,
-            skipped: skippedStudents,
+            skipped: groupSkippedByReason(skippedStudents),
           });
         }
+        
       } catch (err) {
         if (!committed) {
           await session.abortTransaction();
@@ -379,6 +410,17 @@ exports.importStudentScores = async (req, res) => {
       }
     });
 };
+
+function groupSkippedByReason(skippedList) {
+  const grouped = {};
+  for (const item of skippedList) {
+    const reason = item.reason || "Lý do không xác định";
+    if (!grouped[reason]) grouped[reason] = [];
+    grouped[reason].push(item.tdt_id || "Không xác định");
+  }
+  return grouped;
+}
+
 
 function getStatusFromGPA(gpa) {
   if (gpa >= 9) return "XUẤT SẮC";

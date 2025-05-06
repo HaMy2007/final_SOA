@@ -19,13 +19,12 @@ router.put("/classes/assign-teacher", classController.assignTeacherToClass);
 router.get("/classes/by-teacher/:teacherId", classController.getClassByTeacherId);
 router.put("/classes/:classId/remove-teacher", authenticateToken, authorizeRoles("admin"), classController.removeAdvisorFromClass);
 router.delete("/classes/remove-student-if-exists/:studentId", authenticateToken, authorizeRoles("admin"), classController.adminDeleteStudentFromClass);
-
 router.get("/teacher/tdt/:tdt_id", classController.getClassesByTdtId);
-
 router.get("/:class_id", classController.getClassById);
 router.post('/classes/:classId/add-advisor', authenticateToken, authorizeRoles("admin"), classController.addAdvisorToClass);
 router.put("/classes/:classId/change-advisor", authenticateToken, authorizeRoles("admin"), classController.changeAdvisorOfClass);
 router.put("/classes/add-teacher", classController.addClassForTeacher);
 router.put("/classes/remove-teacher", classController.removeTeacherFromClass);
+router.get('/classes/:classId/subjects', classController.getSubjectsOfClass);
 
 module.exports = router;
