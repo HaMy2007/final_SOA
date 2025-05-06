@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
 import { GrScorecard } from "react-icons/gr";
@@ -23,10 +23,23 @@ const Home = () => {
   const [userDetail, setUserDetail] = useState<any>(null);
   const [advisor, setAdvisor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   const { studentClass, setStudentClass, classes } = useClass();
 
   console.log("cac lop duoc tao ", classes);
+
+  const { isHomeroomTeacher, isSubjectTeacher } = useMemo(() => {
+    if (!userDetail || userDetail.role !== "advisor") {
+      return { isHomeroomTeacher: false, isSubjectTeacher: false };
+    }
+
+    const isSubjectTeacher = true;
+
+    const isHomeroomTeacher =
+      Array.isArray(userDetail.advisor_type) &&
+      userDetail.advisor_type.includes("homeroom_teacher");
+
+    return { isHomeroomTeacher, isSubjectTeacher };
+  }, [userDetail]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -62,18 +75,26 @@ const Home = () => {
         }
         if (fetchedUser.role === "advisor") {
           const advisorId = fetchedUser._id;
-          const classRes = await axios.get(
-            `http://localhost:4000/api/teachers/${advisorId}/class`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
+          // const classRes = await axios.get(
+          //   `http://localhost:4000/api/teachers/${advisorId}/class`,
+          //   {
+          //     headers: { Authorization: `Bearer ${token}` },
+          //   }
+          // );
+
+          if (fetchedUser.advisor_type.includes("homeroom_teacher")) {
+            try {
+              const classRes = await axios.get(
+                `http://localhost:4000/api/teachers/${advisorId}/class`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              setStudentClass(classRes.data.class);
+            } catch (error) {
+              console.error("Lỗi lấy thông tin lớp:", error);
             }
-          );
-
-          console.log("classRes o covan", classRes);
-
-          setStudentClass(classRes.data.class);
-
-          console.log("Advisor Class:", classRes.data.class);
+          }
         }
       } catch (err) {
         console.error("Lỗi lấy thông tin người dùng:", err);
@@ -323,14 +344,21 @@ const Home = () => {
                   </div>
                   <div className="flex flex-col">
                     <p className="font-bold text-xl">Vai trò</p>
-                    <p className="text-xl">Giáo viên</p>
-                  </div>
-                  <div className="flex flex-col">
-                    <p className="font-bold text-xl">Lớp hiện tại</p>
                     <p className="text-xl">
-                      {studentClass?.class_id} - {studentClass?.class_name}
+                      {" "}
+                      {isHomeroomTeacher
+                        ? "Giáo viên chủ nhiệm"
+                        : "Giáo viên bộ môn"}
                     </p>
                   </div>
+                  {isHomeroomTeacher && (
+                    <div className="flex flex-col">
+                      <p className="font-bold text-xl">Lớp chủ nhiệm</p>
+                      <p className="text-xl">
+                        {studentClass?.class_id} - {studentClass?.class_name}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -10,6 +10,8 @@ import ClassManagement from "./pages/admin/ClassManagement";
 import DepartmentDetail from "./pages/admin/DepartmentDetail";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import TeacherDetailInDepartment from "./pages/admin/TeacherDetailInDepartment";
+import ClassManagementForSubjectTeacher from "./pages/advisor/ClassManagementForSubjectTeacher";
+import SubjectTeacherScoreDetail from "./pages/advisor/SubjectTeacherScoreDetail";
 import ChangePassword from "./pages/ChangePassword";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import Forum from "./pages/Forum";
@@ -98,12 +100,24 @@ const App = () => {
           <Route path="forum" element={<Forum />} />
           <Route path="profile" element={<Profile />} />
           <Route
+            path="classForSubjectTeacher"
+            element={<ClassManagementForSubjectTeacher />}
+          />
+          <Route
             path="students"
             element={
               <StudentInfoProvider>
                 <StudentInfor />
               </StudentInfoProvider>
             }
+          />
+          <Route
+            path="classForSubjectTeacher"
+            element={<ClassManagementForSubjectTeacher />}
+          />
+          <Route
+            path="classForSubjectTeacher/:classId/:studentId"
+            element={<SubjectTeacherScoreDetail />}
           />
           <Route path="databaseManagement" element={<DatabaseManagement />} />
           <Route path="dashboard" element={<DepartmentManagement />} />

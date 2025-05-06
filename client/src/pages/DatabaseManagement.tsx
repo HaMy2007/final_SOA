@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaFileUpload, FaUpload } from "react-icons/fa";
 import Swal from "sweetalert2";
 
@@ -123,6 +123,18 @@ const DatabaseManagement = () => {
   const [classId, setClassId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  const { isHomeroomTeacher, isSubjectTeacher } = useMemo(() => {
+    if (!user || user.role !== "advisor") {
+      return { isHomeroomTeacher: false, isSubjectTeacher: false };
+    }
+    return {
+      isHomeroomTeacher:
+        Array.isArray(user.advisor_type) &&
+        user.advisor_type.includes("homeroom_teacher"),
+      isSubjectTeacher: true,
+    };
+  }, [user]);
+
   useEffect(() => {
     const fetchClassId = async () => {
       if (role !== "advisor") return;
@@ -167,6 +179,7 @@ const DatabaseManagement = () => {
               title="Danh sách học sinh"
               description="Tải danh sách tài khoản và thông tin học sinh."
             />
+
             <UploadSection
               type="subjects"
               title="Danh sách môn học"
@@ -180,19 +193,40 @@ const DatabaseManagement = () => {
           </>
         )}
 
-        {role === "advisor" && classId && (
+        {/* {role === "advisor" && classId && (
           <>
+            {isHomeroomTeacher && (
+              <UploadSection
+                type="students"
+                title="Danh sách học sinh"
+                description="Tải danh sách tài khoản và thông tin học sinh."
+              />
+            )}
+
             <UploadSection
-              type="members"
-              title="Danh sách học sinh"
-              description="Tải danh sách tài khoản và thông tin học sinh."
-              classId={classId}
+              type="semesters"
+              title="Danh sách kỳ học"
+              description="Tải danh sách kỳ học lên hệ thống."
             />
             <UploadSection
-              type="subjects"
-              title="Danh sách môn học"
-              description="Tải danh sách môn học lên hệ thống."
+              type="grades"
+              title="Cập nhật bảng điểm"
+              description="Tải bảng điểm của học sinh."
             />
+          </>
+        )} */}
+
+        {role === "advisor" && (
+          <>
+            {isHomeroomTeacher && classId && (
+              <UploadSection
+                type="students"
+                title="Danh sách học sinh"
+                description="Tải danh sách tài khoản và thông tin học sinh."
+                classId={classId}
+              />
+            )}
+
             <UploadSection
               type="semesters"
               title="Danh sách kỳ học"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { MdChangeCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -11,9 +11,30 @@ const Sidebar = () => {
   const userRole = Array.isArray(user.role) ? user.role[0] : user.role;
   const [selectedItem, setSelectedItem] = useState("");
 
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.allowedRoles.includes(userRole)
-  );
+  const isSubjectTeacher = useMemo(() => {
+    return (
+      user.role === "advisor" &&
+      Array.isArray(user.advisor_type) &&
+      !user.advisor_type.includes("homeroom_teacher")
+    );
+  }, [user]);
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (isSubjectTeacher) {
+      if (item.path === "studentScore") {
+        return false;
+      }
+      if (item.path === "classForSubjectTeacher") {
+        return true;
+      }
+    } else {
+      if (item.path === "classForSubjectTeacher") {
+        return false;
+      }
+    }
+
+    return item.allowedRoles.includes(userRole);
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("user");

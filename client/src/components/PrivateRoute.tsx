@@ -1,5 +1,5 @@
-import { Navigate, useLocation } from "react-router-dom";
 import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -14,6 +14,10 @@ const PrivateRoute = ({ children, allowedRoles }: PrivateRouteProps) => {
   if (!user || !userRole) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  // if (userRole === "advisor" && allowedRoles.includes("subject_teacher")) {
+  //   return children;
+  // }
 
   return allowedRoles.includes(userRole) ? (
     children

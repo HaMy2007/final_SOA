@@ -11,6 +11,8 @@ exports.authenticateToken = (req, res, next) => {
       return res.sendStatus(403);
     }
 
+    console.log("User from token:", user);
+
     req.user = user;
     next();
   });
@@ -24,6 +26,10 @@ exports.authorizeRoles = (...allowedRoles) => {
       return res.status(403).json({ message: "Bạn không có quyền truy cập" });
     }
 
+    // if (user.role === "advisor") {
+    //   return next();
+    // }
+
     next();
   };
 };
@@ -36,24 +42,24 @@ exports.allowStudentAndAdvisorOnlyAndOwner = (req, res, next) => {
     return next();
   }
 
-  return res
-    .status(403)
-    .json({
-      message: "Chỉ giáo viên, học sinh và đúng người đăng mới được phép",
-    });
+  return res.status(403).json({
+    message: "Chỉ giáo viên, học sinh và đúng người đăng mới được phép",
+  });
 };
 
 exports.checkAdvisorType = (requiredTypes) => {
   return (req, res, next) => {
-    if (req.user.role !== 'advisor') {
-      return res.status(403).json({ message: 'Không phải advisor' });
+    if (req.user.role !== "advisor") {
+      return res.status(403).json({ message: "Không phải advisor" });
     }
 
     const advisorTypes = req.user.advisor_type || [];
 
-    const hasPermission = requiredTypes.some(type => advisorTypes.includes(type));
+    const hasPermission = requiredTypes.some((type) =>
+      advisorTypes.includes(type)
+    );
     if (!hasPermission) {
-      return res.status(403).json({ message: 'Không đủ quyền advisor' });
+      return res.status(403).json({ message: "Không đủ quyền advisor" });
     }
 
     next();

@@ -52,6 +52,14 @@ export const menuItems: MenuItem[] = [
     icon: MdOutlineScore,
     allowedRoles: ["advisor", "admin"],
   },
+
+  {
+    path: "classForSubjectTeacher",
+    label: "Lớp học",
+    icon: MdOutlineScore,
+    allowedRoles: ["advisor"],
+  },
+
   {
     path: "personalScore",
     label: "Điểm cá nhân",

@@ -26,7 +26,10 @@ const Login = () => {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:4003/api/auth/login", formData);
+      const res = await axios.post(
+        "http://localhost:4003/api/auth/login",
+        formData
+      );
       const { token, user } = res.data;
 
       // Lưu vào localStorage
@@ -34,6 +37,7 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("tdt_id", user.tdt_id);
       localStorage.setItem("role", user.role);
+      localStorage.setItem("advisor_role", user.advisor_type);
       localStorage.setItem("name", user.name);
 
       // Điều hướng tới dashboard tương ứng

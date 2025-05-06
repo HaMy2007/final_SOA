@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IoMdAdd } from "react-icons/io";
 import Swal from "sweetalert2";
 import StudentList from "../components/StudentList";
@@ -31,6 +31,18 @@ const StudentInfor = () => {
 
   const isAdvisor = user.role === "advisor";
   const isAdmin = user.role === "admin";
+
+  const { isHomeroomTeacher, isSubjectTeacher } = useMemo(() => {
+    if (!user || user.role !== "advisor") {
+      return { isHomeroomTeacher: false, isSubjectTeacher: false };
+    }
+    return {
+      isHomeroomTeacher:
+        Array.isArray(user.advisor_type) &&
+        user.advisor_type.includes("homeroom_teacher"),
+      isSubjectTeacher: true,
+    };
+  }, [user]);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -360,13 +372,15 @@ const StudentInfor = () => {
                 ))}
               </select>
             )}
-            <button
-              className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl"
-              onClick={() => setIsAdding(true)}
-            >
-              <IoMdAdd className="text-white font-bold" />
-              Thêm học sinh
-            </button>
+            {(isAdmin || isHomeroomTeacher) && (
+              <button
+                className="bg-blue-700 hover:bg-blue-800 cursor-pointer flex items-center gap-1 text-white px-3 py-2 rounded-xl"
+                onClick={() => setIsAdding(true)}
+              >
+                <IoMdAdd className="text-white font-bold" />
+                Thêm học sinh
+              </button>
+            )}
 
             <input
               type="file"
@@ -491,9 +505,16 @@ const StudentInfor = () => {
         <StudentList
           role={user.role}
           students={filteredStudents}
+          // onDelete={(tdt_id) => {
+          //   const user = students.find((s) => s.tdt_id === tdt_id);
+          //   if (user) handleDeleteStudent(tdt_id, user._id);
+          // }}
           onDelete={(tdt_id) => {
-            const user = students.find((s) => s.tdt_id === tdt_id);
-            if (user) handleDeleteStudent(tdt_id, user._id);
+            // Chỉ cho phép xóa nếu là admin hoặc giáo viên chủ nhiệm
+            if (isAdmin || isHomeroomTeacher) {
+              const user = students.find((s) => s.tdt_id === tdt_id);
+              if (user) handleDeleteStudent(tdt_id, user._id);
+            }
           }}
           classId={classId}
           setStudents={setStudents}
