@@ -220,7 +220,7 @@ const DatabaseManagement = () => {
           <>
             {isHomeroomTeacher && classId && (
               <UploadSection
-                type="students"
+                type="members"
                 title="Danh sách học sinh"
                 description="Tải danh sách tài khoản và thông tin học sinh."
                 classId={classId}

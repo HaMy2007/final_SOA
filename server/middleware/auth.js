@@ -11,7 +11,7 @@ exports.authenticateToken = (req, res, next) => {
       return res.sendStatus(403);
     }
 
-    console.log("User from token:", user);
+    // console.log("User from token:", user);
 
     req.user = user;
     next();

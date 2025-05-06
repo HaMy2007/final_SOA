@@ -596,9 +596,13 @@ exports.fullDeleteStudent = async (req, res) => {
   const studentId = req.params.id;
 
   try {
-    await axios.delete(
-      `http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`
-    );
+    try {
+      await axios.delete(
+        `http://localhost:4000/api/classes/remove-student-if-exists/${studentId}`
+      );
+    } catch (removeErr) {
+      console.warn("Không xóa khỏi lớp được (có thể vì không thuộc lớp):", removeErr.message);
+    }
 
     await User.findByIdAndDelete(studentId);
     await LoginInfo.findOneAndDelete({ user_id: studentId });

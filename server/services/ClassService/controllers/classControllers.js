@@ -450,6 +450,17 @@ exports.addAdvisorToClass = async (req, res) => {
 
     const advisorId = userIds[0];
 
+    const classWithSameTeacher = await Class.findOne({
+      class_teacher: advisorId,
+      class_id: { $ne: classId }, // bỏ qua lớp hiện tại (nếu đang cập nhật)
+    });
+
+    if (classWithSameTeacher) {
+      return res.status(409).json({
+        message: `Giáo viên đã là chủ nhiệm lớp ${classWithSameTeacher.class_id}`,
+      });
+    }
+
     const existingClass = await Class.findOne({ class_id: classId });
 
     if (!existingClass) {
@@ -467,6 +478,17 @@ exports.addAdvisorToClass = async (req, res) => {
     existingClass.class_teacher = advisorId;
     await existingClass.save();
 
+    try {
+      await axios.put(
+        `http://localhost:4003/api/users/${advisorId}/add-homeroom-teacher`
+      );
+    } catch (err) {
+      console.warn(
+        "Không thể cập nhật advisor_type:",
+        err.response?.data || err.message
+      );
+    }
+
     res.status(200).json({
       message: "Đã thêm giáo viên vào lớp",
       class: existingClass,
@@ -476,47 +498,6 @@ exports.addAdvisorToClass = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi thêm giáo viên" });
   }
 };
-
-// exports.changeAdvisorOfClass = async (req, res) => {
-//   try {
-//     const { classId } = req.params;
-//     const { email } = req.body;
-
-//     const userServiceURL = "http://localhost:4003/api/users/get-ids-by-emails";
-//     const userResponse = await axios.post(userServiceURL, {
-//       emails: [email],
-//     });
-
-//     const userIds = userResponse.data.userIds;
-//     if (!userIds || userIds.length === 0) {
-//       return res
-//         .status(404)
-//         .json({ message: "Email giáo viên không tồn tại trong hệ thống" });
-//     }
-
-//     const advisorId = userIds[0];
-
-//     const existingClass = await Class.findOne({ class_id: classId });
-//     if (!existingClass) {
-//       return res.status(404).json({ message: "Không tìm thấy lớp học" });
-//     }
-
-//     if (existingClass.class_teacher.toString() === advisorId) {
-//       return res.status(409).json({ message: "Đây đã là giáo viên hiện tại" });
-//     }
-
-//     existingClass.class_teacher = advisorId;
-//     await existingClass.save();
-
-//     res.status(200).json({
-//       message: "Đã cập nhật giáo viên lớp thành công",
-//       class: existingClass,
-//     });
-//   } catch (error) {
-//     console.error("[Edit Advisor ERROR]", error.message);
-//     res.status(500).json({ message: "Lỗi server khi cập nhật giáo viên" });
-//   }
-// };
 
 exports.changeAdvisorOfClass = async (req, res) => {
   try {
@@ -550,7 +531,17 @@ exports.changeAdvisorOfClass = async (req, res) => {
         .json({ message: "Đây đã là giáo viên hiện tại" });
     }
 
-    // ✅ Gọi API để gỡ homeroom_teacher khỏi giáo viên cũ nếu có
+    const classWithSameTeacher = await Class.findOne({
+      class_teacher: newAdvisorId,
+      class_id: { $ne: classId },
+    });
+
+    if (classWithSameTeacher) {
+      return res.status(409).json({
+        message: `Giáo viên đã là chủ nhiệm lớp ${classWithSameTeacher.class_id}`,
+      });
+    }
+
     if (currentAdvisorId) {
       try {
         await axios.put(`http://localhost:4003/api/users/${currentAdvisorId}/remove-homeroom-teacher`);
@@ -559,14 +550,12 @@ exports.changeAdvisorOfClass = async (req, res) => {
       }
     }
 
-    // ✅ Gọi API để thêm homeroom_teacher cho giáo viên mới
     try {
       await axios.put(`http://localhost:4003/api/users/${newAdvisorId}/add-homeroom-teacher`);
     } catch (err) {
       console.warn("Không thể cập nhật advisor_type giáo viên mới:", err?.response?.data || err.message);
     }
 
-    // ✅ Cập nhật class_teacher
     existingClass.class_teacher = newAdvisorId;
     await existingClass.save();
 
