@@ -18,14 +18,12 @@ const ClassManagementForSubjectTeacher = () => {
   useEffect(() => {
     const fetchTeacherClasses = async () => {
       try {
-        // Tạm thời sử dụng API classes hiện có
         const classesRes = await axios.get(
-          `http://localhost:4000/api/classes`,
+          `http://localhost:4000/api/teacher/tdt/${user.tdt_id}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        // Giả định đây là các lớp mà giáo viên bộ môn dạy
         setClasses(classesRes.data);
       } catch (err) {
         console.error("Lỗi khi lấy danh sách lớp:", err);
@@ -34,13 +32,14 @@ const ClassManagementForSubjectTeacher = () => {
       }
     };
 
-    fetchTeacherClasses();
-  }, []);
+    if (user?.tdt_id) {
+      fetchTeacherClasses();
+    }
+  }, [user?.tdt_id]);
 
   const fetchStudentsByClass = async (classId: string) => {
     try {
       setSelectedClass(classId);
-      // Sử dụng API hiện có để lấy danh sách học sinh của lớp
       const classRes = await axios.get(
         `http://localhost:4000/api/classes/${classId}/students`,
         {

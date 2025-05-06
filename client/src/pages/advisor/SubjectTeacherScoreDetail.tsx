@@ -6,6 +6,7 @@ const SubjectTeacherScoreDetail = () => {
   const { classId, studentId } = useParams();
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const teacherId = user?.tdt_id;
 
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [semesters, setSemesters] = useState<any[]>([]);
@@ -59,17 +60,31 @@ const SubjectTeacherScoreDetail = () => {
       if (!studentInfo || !selectedSemesterId) return;
       setLoading(true);
       try {
-        // Tạm thời sử dụng API scores hiện có
         const res = await axios.get(
-          `http://localhost:4002/api/students/${studentInfo._id}/scores?semester_id=${selectedSemesterId}`,
+          `http://localhost:4002/api/students/scores/${studentInfo._id}/by-teacher/${teacherId}?semester_id=${selectedSemesterId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        // Giả định chỉ hiển thị điểm của môn học mà giáo viên này dạy
-        // Trong thực tế, cần backend filter điểm theo môn học của giáo viên
-        setGrades(res.data.scores);
+        const subject = res.data.subject || [res.data.subject];
+
+        if (subject) {
+          const formatted = {
+            subject_id: subject.subject_id,
+            subject_code: subject.subject_code,
+            subject_name: subject.subject_name,
+            score_15p: subject.scores.find((s: any) => s.category === "15p")?.score,
+            score_1tiet: subject.scores.find((s: any) => s.category === "1tiet")?.score,
+            score_giuaky: subject.scores.find((s: any) => s.category === "giuaky")?.score,
+            score_cuoiky: subject.scores.find((s: any) => s.category === "cuoiky")?.score,
+            score: subject.subjectGPA,
+          };
+
+          setGrades([formatted]); 
+        } else {
+          setGrades([]);
+        }
       } catch (err) {
         console.error("Lỗi khi tải điểm:", err);
       } finally {
@@ -78,7 +93,7 @@ const SubjectTeacherScoreDetail = () => {
     };
 
     fetchScores();
-  }, [studentInfo, selectedSemesterId]);
+  }, [studentInfo, selectedSemesterId, teacherId]);
 
   const handleEditScore = async () => {
     const scores: Record<string, number> = {};
@@ -109,12 +124,30 @@ const SubjectTeacherScoreDetail = () => {
 
       // Refresh scores
       const res = await axios.get(
-        `http://localhost:4002/api/students/${studentInfo._id}/scores?semester_id=${selectedSemesterId}`,
+        `http://localhost:4002/api/students/scores/${studentInfo._id}/by-teacher/${teacherId}?semester_id=${selectedSemesterId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setGrades(res.data.scores);
+      // setGrades(res.data.scores);
+      const subject = res.data.subject || [res.data.subject];
+
+        if (subject) {
+          const formatted = {
+            subject_id: subject.subject_id,
+            subject_code: subject.subject_code,
+            subject_name: subject.subject_name,
+            score_15p: subject.scores.find((s: any) => s.category === "15p")?.score,
+            score_1tiet: subject.scores.find((s: any) => s.category === "1tiet")?.score,
+            score_giuaky: subject.scores.find((s: any) => s.category === "giuaky")?.score,
+            score_cuoiky: subject.scores.find((s: any) => s.category === "cuoiky")?.score,
+            score: subject.subjectGPA,
+          };
+
+          setGrades([formatted]); 
+        } else {
+          setGrades([]);
+        }
 
       alert("Cập nhật điểm thành công!");
     } catch (error: any) {

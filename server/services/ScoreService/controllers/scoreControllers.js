@@ -489,3 +489,65 @@ exports.updateScore = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+exports.getStudentScoreboardByTeacher = async (req, res) => {
+  const { tdt_id, studentId } = req.params;
+  const { semester_id } = req.query;
+
+  if (!semester_id) {
+    return res.status(400).json({ message: "Thiếu semester_id trong query" });
+  }
+
+  try {
+    // 1. Gọi sang education service để lấy MÔN GIÁO VIÊN DẠY
+    const subjectRes = await axios.get(`http://localhost:4001/api/departments/${tdt_id}/subjects`);
+    const teacherSubjects = subjectRes.data;
+
+    if (!teacherSubjects.length) {
+      return res.status(404).json({ message: "Giáo viên không dạy môn nào" });
+    }
+
+    // Chỉ lấy 1 môn vì giáo viên chỉ dạy 1 môn
+    const subjectTaught = teacherSubjects[0]; // { subject_id, subject_code, subject_name }
+
+    // 2. Lấy scoreboard của học sinh trong kỳ học đó
+    const scoreboard = await Scoreboard.findOne({
+      user_id: new mongoose.Types.ObjectId(studentId),
+      semester_id: new mongoose.Types.ObjectId(semester_id)
+    })
+      .populate({
+        path: "subjects.scores",
+        select: "score category createdAt"
+      })
+      .lean();
+
+    if (!scoreboard) {
+      return res.status(404).json({ message: "Không tìm thấy bảng điểm của học sinh trong kỳ này" });
+    }
+
+    // 3. Tìm đúng môn giáo viên đang dạy trong bảng điểm của học sinh
+    const subjectData = scoreboard.subjects.find(
+      s => s.subject_id.toString() === subjectTaught.subject_id
+    );
+
+    if (!subjectData) {
+      return res.status(404).json({ message: "Học sinh không học môn này trong kỳ này" });
+    }
+
+    res.json({
+      student_id: scoreboard.user_id,
+      semester_id: scoreboard.semester_id,
+      subject: {
+        subject_id: subjectTaught.subject_id,
+        subject_code: subjectTaught.subject_code,
+        subject_name: subjectTaught.subject_name,
+        subjectGPA: subjectData.subjectGPA,
+        scores: subjectData.scores
+      }
+    });
+
+  } catch (err) {
+    console.error("Lỗi khi lấy bảng điểm theo giáo viên:", err.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

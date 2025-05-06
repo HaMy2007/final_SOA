@@ -85,10 +85,6 @@ const StudentScoreDetail = () => {
     if (editingSubject.score_giuaky !== undefined) scores["giuaky"] = editingSubject.score_giuaky;
     if (editingSubject.score_cuoiky !== undefined) scores["cuoiky"] = editingSubject.score_cuoiky;
   
-    console.log("user_id:", studentInfo._id);
-    console.log("subject_id:", editingSubject.subject_id);
-    console.log("semester_id:", selectedSemesterId);
-    console.log("scores:", scores);
     if (!editingSubject.subject_id) {
       alert("Mã môn học không hợp lệ!");
       return;

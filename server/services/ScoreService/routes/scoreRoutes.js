@@ -8,5 +8,6 @@ router.get('/:id/scores-by-semester', scoreController.getStudentScoresGroupedByS
 router.get('/:id/scores', scoreController.getStudentScoresBySemester);
 router.post('/import-scores', verifyTokenViaUserService, upload.single('file'), scoreController.importStudentScores);
 router.put("/scores/update", scoreController.updateScore);
+router.get("/scores/:studentId/by-teacher/:tdt_id", scoreController.getStudentScoreboardByTeacher);
 
 module.exports = router;
