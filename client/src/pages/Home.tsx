@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
 import { GrScorecard } from "react-icons/gr";
+import { ImProfile } from "react-icons/im";
 import { IoMdInformationCircle } from "react-icons/io";
 import {
   MdForum,
+  MdOutlineClass,
   MdOutlineDashboardCustomize,
   MdOutlineScore,
 } from "react-icons/md";
@@ -302,11 +304,18 @@ const Home = () => {
                 <span className="ml-2 text-xl">Quản lý CSDL</span>
               </Link>
               <Link
-                to={`/${role}/dashboard`}
+                to={`/${role}/department`}
                 className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
                 <MdOutlineDashboardCustomize className="w-12 h-12 text-pink-400" />
-                <span className="ml-2 text-xl">Dashboard</span>
+                <span className="ml-2 text-xl">Quản lý phòng ban</span>
+              </Link>
+              <Link
+                to={`/${role}/profile`}
+                className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+              >
+                <ImProfile className="w-12 h-12 text-red-400" />
+                <span className="ml-2 text-xl">Hồ sơ cá nhân</span>
               </Link>
               {/* <button
                 onClick={handleLogout}
@@ -383,13 +392,15 @@ const Home = () => {
                 <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
                 <span className="ml-2 text-xl">Thông tin học sinh</span>
               </Link>
-              <Link
-                to={`/${role}/studentScore`}
-                className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
-              >
-                <MdOutlineScore className="w-12 h-12 text-blue-400" />
-                <span className="ml-2 text-xl">Bảng điểm</span>
-              </Link>
+              {isHomeroomTeacher ? (
+                <Link
+                  to={`/${role}/studentScore`}
+                  className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <MdOutlineScore className="w-12 h-12 text-blue-400" />
+                  <span className="ml-2 text-xl">Bảng điểm</span>
+                </Link>
+              ) : null}
 
               <Link
                 to={`/${role}/databaseManagement`}
@@ -399,19 +410,26 @@ const Home = () => {
                 <span className="ml-2 text-xl">Quản lý CSDL</span>
               </Link>
               <Link
-                to={`/${role}/dashboard`}
+                to={`/${role}/profile`}
                 className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
-                <MdOutlineDashboardCustomize className="w-12 h-12 text-pink-400" />
-                <span className="ml-2 text-xl">Dashboard</span>
+                <ImProfile className="w-12 h-12 text-pink-400" />
+                <span className="ml-2 text-xl">Hồ sơ cá nhân</span>
               </Link>
-              <button
+              <Link
+                to={`/${role}/classForSubjectTeacher`}
+                className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+              >
+                <MdOutlineClass className="w-12 h-12 text-red-400" />
+                <span className="ml-2 text-xl">Lớp học</span>
+              </Link>
+              {/* <button
                 onClick={handleLogout}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex items-center flex-col w-full"
               >
                 <CiLogout className="w-12 h-12 text-red-600" />
                 <span className="ml-2 text-xl">Đăng xuất</span>
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

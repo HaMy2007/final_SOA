@@ -3,6 +3,7 @@ import { GrScorecard } from "react-icons/gr";
 import { ImProfile } from "react-icons/im";
 import {
   MdForum,
+  MdOutlineClass,
   MdOutlineDashboardCustomize,
   MdOutlineScore,
 } from "react-icons/md";
@@ -56,7 +57,7 @@ export const menuItems: MenuItem[] = [
   {
     path: "classForSubjectTeacher",
     label: "Lớp học",
-    icon: MdOutlineScore,
+    icon: MdOutlineClass,
     allowedRoles: ["advisor"],
   },
 
