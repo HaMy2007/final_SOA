@@ -24,13 +24,13 @@ const Sidebar = () => {
       if (item.path === "studentScore") {
         return false;
       }
-      if (item.path === "classForSubjectTeacher") {
-        return true;
-      }
+      // if (item.path === "classForSubjectTeacher") {
+      //   return true;
+      // }
     } else {
-      if (item.path === "classForSubjectTeacher") {
-        return false;
-      }
+      // if (item.path === "classForSubjectTeacher") {
+      //   return fasle;
+      // }
     }
 
     return item.allowedRoles.includes(userRole);
