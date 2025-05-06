@@ -545,7 +545,7 @@ exports.addAdvisorByAdmin = async (req, res) => {
 
     const existed = await User.findOne({ $or: [{ email }, { tdt_id }] });
     if (existed) {
-      return res.status(400).json({ message: "giáo viên đã tồn tại" });
+      return res.status(400).json({ message: "Mã giáo viên đã tồn tại" });
     }
 
     const newUser = new User({
@@ -569,17 +569,19 @@ exports.addAdvisorByAdmin = async (req, res) => {
       password: hashedPassword,
     });
 
-    try {
-      await axios.put(`http://localhost:4000/api/classes/assign-teacher`, {
-        class_id: class_id,
-        teacher_id: savedUser._id,
-      });
-    } catch (err) {
-      console.error("[CLASS SERVICE ERROR]:", err.message);
-      return res.status(500).json({
-        message: "Tạo giáo viên thành công, nhưng gán lớp thất bại",
-        advisor: savedUser,
-      });
+    if (class_id) {
+      try {
+        await axios.put(`http://localhost:4000/api/classes/assign-teacher`, {
+          class_id: class_id,
+          teacher_id: savedUser._id,
+        });
+      } catch (err) {
+        console.error("[CLASS SERVICE ERROR]:", err.message);
+        return res.status(500).json({
+          message: "Tạo giáo viên thành công, nhưng gán lớp thất bại",
+          advisor: savedUser,
+        });
+      }
     }
 
     res.status(200).json({

@@ -232,3 +232,22 @@ exports.getSubjectOfTeacher = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+exports.getDepartmentOfTeacher = async (req, res) => {
+  try {
+    const userId = new mongoose.Types.ObjectId(req.params.userId);
+
+    const department = await Department.findOne({
+      "members.users": userId
+    });
+
+    if (!department) {
+      return res.status(404).json({ message: "Không tìm thấy tổ bộ môn của giáo viên này" });
+    }
+
+    res.json({ departmentName: department.name });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

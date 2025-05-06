@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CiEdit } from "react-icons/ci";
 import { MdDelete } from "react-icons/md";
 import Swal from "sweetalert2";
@@ -12,6 +12,34 @@ type Props = {
 const AdvisorList = ({ advisors, onRefresh }: Props) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingAdvisor, setEditingAdvisor] = useState<any>(null);
+  const [departmentNames, setDepartmentNames] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const token = localStorage.getItem("token");
+      const newMap: { [key: string]: string } = {};
+  
+      await Promise.all(
+        advisors.map(async (advisor) => {
+          try {
+            const res = await axios.get(
+              `http://localhost:4001/api/departments/of-user/${advisor._id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            newMap[advisor._id] = res.data.departmentName;
+          } catch (err) {
+            newMap[advisor._id] = "Chưa có tổ";
+          }
+        })
+      );
+  
+      setDepartmentNames(newMap);
+    };
+  
+    if (advisors.length > 0) {
+      fetchDepartments();
+    }
+  }, [advisors]);
 
   const handleDelete = async (_id: string) => {
     try {
@@ -176,7 +204,7 @@ const AdvisorList = ({ advisors, onRefresh }: Props) => {
             <th className="text-base border border-gray-300 p-2">
               Mã số giáo viên
             </th>
-            <th className="text-base border border-gray-300 p-2">Giới tính</th>
+            <th className="text-base border border-gray-300 p-2">Tổ</th>
             <th className="text-base border border-gray-300 p-2">Lớp</th>
             <th className="text-base border border-gray-300 p-2">Ngày sinh</th>
             <th className="text-base border border-gray-300 p-2">Email</th>
@@ -197,7 +225,7 @@ const AdvisorList = ({ advisors, onRefresh }: Props) => {
                 {advisor.tdt_id}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
-                {advisor.gender}
+                {departmentNames[advisor._id] || "Đang tải..."}
               </td>
               <td className="text-center border text-sm border-gray-300 p-4">
                 {advisor.class_id ? advisor.class_id : "Chưa có lớp"}

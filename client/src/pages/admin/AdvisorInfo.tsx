@@ -99,19 +99,9 @@ const AdvisorInfor = () => {
       });
       fetchAdvisors();
       Swal.fire("Thành công", "Đã thêm giáo viên vào hệ thống", "success");
-
-      // } catch (err: any) {
-      //   console.error("Lỗi khi thêm giáo viên:", err);
-      //   Swal.fire("Lỗi", err.response?.data?.message || "Không thể thêm giáo viên", "error");
-      // }
     } catch (err: any) {
       console.error("Lỗi khi thêm giáo viên:", err);
-
-      const errorMessage =
-        err.response?.data?.message || // Lỗi chi tiết từ server (nếu có)
-        err.message || // Lỗi từ axios
-        "Không thể thêm giáo viên"; // fallback
-
+      const errorMessage = err.response?.data?.message ||   err.message ||  "Không thể thêm giáo viên"; 
       Swal.fire("Lỗi", errorMessage, "error");
     }
   };
