@@ -17,6 +17,7 @@ const StudentScoresList = () => {
   const [classId, setClassId] = useState<string>("");
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedTerm, setSelectedTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -342,7 +343,24 @@ const StudentScoresList = () => {
               <th className="py-3 px-4 text-left">Họ và tên</th>
               <th className="py-3 px-4 text-left">Lớp</th>
               <th className="py-3 px-4 text-left">Mã định danh</th>
-              <th className="py-3 px-4 text-left">Trạng thái</th>
+              {/* <th className="py-3 px-4 text-left">Trạng thái</th> */}
+              <td className="py-3 px-4">
+                <select
+                  className="border rounded-md"
+                  value={selectedTerm}
+                  onChange={(e) => {
+                    setSelectedTerm(e.target.value);
+                    // Gọi hàm để cập nhật trạng thái học sinh theo kỳ đã chọn
+                    // fetchStudentStatusByTerm(student._id, e.target.value);
+                  }}
+                >
+                  <option value="">Chọn kỳ</option>
+                  <option value="Kỳ 1">Kỳ 1</option>
+                  <option value="Kỳ 2">Kỳ 2</option>
+                  <option value="Kỳ 3">Kỳ 3</option>
+                  {/* Thêm các kỳ khác nếu cần */}
+                </select>
+              </td>
               <th className="py-3 px-4 text-left">Ngày sinh</th>
               <th className="py-3 px-4 text-center">Chi tiết điểm</th>
             </tr>
