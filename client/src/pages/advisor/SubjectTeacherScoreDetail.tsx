@@ -18,7 +18,6 @@ const SubjectTeacherScoreDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy thông tin học sinh
         const userRes = await axios.get(
           `http://localhost:4003/api/users/tdt/${studentId}`,
           {
@@ -27,7 +26,6 @@ const SubjectTeacherScoreDetail = () => {
         );
         setStudentInfo(userRes.data);
 
-        // Tạm thời sử dụng API scores-by-semester hiện có
         const scoreGroupedRes = await axios.get(
           `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
           {
@@ -122,7 +120,6 @@ const SubjectTeacherScoreDetail = () => {
 
       setEditingSubject(null);
 
-      // Refresh scores
       const res = await axios.get(
         `http://localhost:4002/api/students/scores/${studentInfo._id}/by-teacher/${teacherId}?semester_id=${selectedSemesterId}`,
         {
@@ -156,7 +153,7 @@ const SubjectTeacherScoreDetail = () => {
     }
   };
 
-  if (loading) return <div className="p-6">Đang tải dữ liệu...</div>;
+  // if (loading) return <div className="p-6">Đang tải dữ liệu...</div>;
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
@@ -200,7 +197,8 @@ const SubjectTeacherScoreDetail = () => {
               </tr>
             </thead>
             <tbody>
-              {grades.map((grade, index) => (
+            {grades.length > 0 ? (
+              grades.map((grade, index) => (
                 <tr key={index} className="border-t text-sm">
                   <td className="p-3">{grade.subject_name}</td>
                   <td className="p-3">{grade.subject_code}</td>
@@ -224,7 +222,14 @@ const SubjectTeacherScoreDetail = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+            ): (
+              <tr>
+                <td colSpan={8} className="text-center p-4 text-gray-500">
+                  Chưa có dữ liệu điểm cho học kỳ này.
+                </td>
+              </tr>
+            )}
             </tbody>
           </table>
         </div>

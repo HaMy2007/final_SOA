@@ -26,6 +26,24 @@ const UserSchema = new Schema(
         message: "advisor_type must not be empty if role is advisor",
       },
     },
+    status: {
+      type: String,
+      enum: ["active", "graduated", "dropped"],
+      default: "active",
+    },
+
+    graduation_year: {
+      type: Number,
+      validate: {
+        validator: function (value) {
+          if (value !== undefined && this.role !== "student") {
+            return false;
+          }
+          return true;
+        },
+        message: "graduation_year is only allowed for students",
+      },                                                 
+    },
     gender: { type: String, enum: ["male", "female", "other"], required: true },
     phone_number: { type: String, required: true },
     parent_number: { type: String },

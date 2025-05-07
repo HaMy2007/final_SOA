@@ -17,22 +17,23 @@ const ClassDetail = (props: Props) => {
   const [students, setStudents] = useState<any[]>([]);
   const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [newSubjectTeacherEmail, setNewSubjectTeaacherEmail] = useState("");
 
   useEffect(() => {
-    const fetchTeachers = async () => {
-      try {
-        const res = await axios.get(`http://localhost:4000/api/classes/${classId}/subjects`);
-        setTeachers(res.data); // Lưu danh sách giáo viên
-      } catch (error) {
-        console.error("Lỗi khi lấy thông tin giáo viên:", error);
-      }
-    };
-  
     if (classId) {
       fetchTeachers();
     }
   }, [classId]);
 
+  const fetchTeachers = async () => {
+    try {
+      const res = await axios.get(`http://localhost:4000/api/classes/${classId}/subjects`);
+      setTeachers(res.data);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin giáo viên:", error);
+    }
+  };
+  
   const handleAddAdvisorClick = async () => {
     if (!newAdvisorEmail) {
       Swal.fire({
@@ -139,20 +140,87 @@ const ClassDetail = (props: Props) => {
           },
         }
       );
-
+      await fetchTeachers();
       Swal.fire({
         icon: "success",
         title: "Thành công",
         text: "Đã xoá giáo viên khỏi lớp!",
       });
-
-      // const resdt = await axios.get(`http://localhost:4000/api/classes/${classId}/subjects`);
-      // setTeachers(resdt.data);
     } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Lỗi",
         text: "Không thể xoá giáo viên khỏi lớp.",
+      });
+    }
+  };  
+
+  const handleAddSubjectTeacherClick = async () => {
+    if (!newSubjectTeacherEmail) {
+      Swal.fire({
+        icon: "warning",
+        title: "Thiếu thông tin",
+        text: "Vui lòng nhập email giáo viên mới",
+      });
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem("token");
+  
+      // Gọi API để lấy thông tin giáo viên từ email
+      const teacherRes = await axios.post(
+        `http://localhost:4003/api/users/get-ids-by-emails`,
+        {
+          emails: [newSubjectTeacherEmail]
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const teacherId = teacherRes.data?.userIds?.[0];
+      if (!teacherId) {
+        Swal.fire({
+          icon: "error",
+          title: "Không tìm thấy giáo viên",
+          text: "Email không đúng hoặc giáo viên không tồn tại",
+        });
+        return;
+      }
+  
+      // Gọi API gán giáo viên vào lớp
+      await axios.put(
+        `http://localhost:4000/api/classes/add-teacher`,
+        {
+          class_id: classId,
+          teacher_id: teacherId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      Swal.fire({
+        icon: "success",
+        title: "Thành công",
+        text: "Đã thêm giáo viên bộ môn vào lớp!",
+      });
+  
+      setNewSubjectTeaacherEmail("");
+      await fetchTeachers();
+    } catch (err: any) {
+      console.error("Lỗi khi thêm giáo viên bộ môn:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Thêm thất bại",
+        text:
+          err.response?.data?.message ||
+          "Đã xảy ra lỗi khi thêm giáo viên bộ môn",
       });
     }
   };  
@@ -308,6 +376,21 @@ const ClassDetail = (props: Props) => {
             <p>Mã lớp: {classInfo.class_id}</p>
           </div>
         )}
+        <div className="mb-4 flex gap-3">
+            <input
+              type="email"
+              placeholder="Nhập email giáo viên"
+              value={newSubjectTeacherEmail}
+              onChange={(e) => setNewSubjectTeaacherEmail(e.target.value)}
+              className="border p-2 rounded-md w-2/5"
+            />
+            <button
+              className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-md"
+              onClick={handleAddSubjectTeacherClick}
+            >
+              Thêm giáo viên bộ môn
+            </button>
+        </div>
 
         <table className="min-w-full border-collapse border border-gray-300 bg-white mt-5">
           <thead className="bg-gray-200">
