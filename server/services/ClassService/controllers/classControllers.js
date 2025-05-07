@@ -688,31 +688,6 @@ exports.getClassesByTdtId = async (req, res) => {
   }
 };
 
-// exports.addClassForTeacher = async (req, res) => {
-//   const { class_id, teacher_id } = req.body;
-
-//   if (!class_id || !teacher_id) {
-//     return res.status(400).json({ message: "Thiếu class_id hoặc teacher_id" });
-//   }
-
-//   try {
-//     const updatedClass = await Class.findOneAndUpdate(
-//       { class_id }, // tìm theo class_id
-//       { $addToSet: { subject_teacher: teacher_id } }, // thêm vào mảng nếu chưa có
-//       { new: true }
-//     );
-
-//     if (!updatedClass) {
-//       return res.status(404).json({ message: "Không tìm thấy lớp" });
-//     }
-
-//     res.json(updatedClass);
-//   } catch (err) {
-//     console.error("Lỗi khi thêm giáo viên vào lớp:", err);
-//     res.status(500).json({ message: "Lỗi server" });
-//   }
-// };
-
 exports.addClassForTeacher = async (req, res) => {
   const { class_id, teacher_id } = req.body; 
 
