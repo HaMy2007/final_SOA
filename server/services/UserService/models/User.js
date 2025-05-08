@@ -44,6 +44,22 @@ const UserSchema = new Schema(
         message: "graduation_year is only allowed for students",
       },                                                 
     },
+    repeat_years: {
+      type: [
+        {
+          grade: { type: String, required: true },
+          school_year: { type: String, required: true },
+          reason: { type: String, default: 'Low academic performance' }
+        }
+      ],
+      validate: {
+        validator: function (v) {
+          return this.role === "student" || (Array.isArray(v) && v.length === 0);
+        },
+        message: "Only students can have repeat_years"
+      },
+      default: []
+    },    
     gender: { type: String, enum: ["male", "female", "other"], required: true },
     phone_number: { type: String, required: true },
     parent_number: { type: String },

@@ -375,6 +375,10 @@ async function insertUsers(users, res) {
       date_of_birth: new Date(date_of_birth),
     });
 
+    if (trimmedRole === "student" && u.parent_number) {
+      newUser.parent_number = u.parent_number.trim();
+    }
+
     const savedUser = await newUser.save();
 
     if (["student", "advisor"].includes(trimmedRole)) {

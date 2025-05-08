@@ -81,3 +81,19 @@ exports.importSemesters = async (req, res) => {
     }
   };
   
+  exports.getSemesterById = async (req, res) => {
+    try {
+      const semester = await Semester.findById(req.params.id);
+  
+      if (!semester) {
+        return res.status(404).json({ message: 'Không tìm thấy học kỳ' });
+      }
+  
+      res.status(200).json(semester);
+    } catch (err) {
+      console.error('[ERROR] Lấy semester theo _id:', err.message);
+      res.status(500).json({ message: 'Lỗi server khi lấy học kỳ' });
+    }
+  };
+  
+  
