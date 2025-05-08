@@ -1,5 +1,5 @@
 import { FaHome } from "react-icons/fa";
-import { GrScorecard } from "react-icons/gr";
+import { GrSchedule, GrScorecard } from "react-icons/gr";
 import { ImProfile } from "react-icons/im";
 import {
   MdForum,
@@ -10,6 +10,7 @@ import {
 
 import React from "react";
 import { IoMdInformationCircle } from "react-icons/io";
+import { RxDashboard } from "react-icons/rx";
 import { SiInformatica } from "react-icons/si";
 import { Role } from "../types/auth";
 
@@ -55,9 +56,23 @@ export const menuItems: MenuItem[] = [
   },
 
   {
+    path: "schedule",
+    label: "Thời khóa biểu",
+    icon: GrSchedule,
+    allowedRoles: ["advisor", "admin", "student"],
+  },
+
+  {
     path: "classForSubjectTeacher",
     label: "Lớp học",
     icon: MdOutlineClass,
+    allowedRoles: ["advisor"],
+  },
+
+  {
+    path: "dashboard",
+    label: "Tổng quan",
+    icon: RxDashboard,
     allowedRoles: ["advisor"],
   },
 

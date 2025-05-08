@@ -40,6 +40,7 @@ const ClassManagementForSubjectTeacher = () => {
   const fetchStudentsByClass = async (classId: string) => {
     try {
       setSelectedClass(classId);
+      // localStorage.setItem("classId", classId);
       const classRes = await axios.get(
         `http://localhost:4000/api/classes/${classId}/students`,
         {

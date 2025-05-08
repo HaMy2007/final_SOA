@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { FaFilter, FaInfoCircle, FaSearch } from "react-icons/fa";
+import { RiExportFill } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 
 const StudentScoresList = () => {
@@ -18,7 +19,9 @@ const StudentScoresList = () => {
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState("");
-  const [termStatusMap, setTermStatusMap] = useState<Record<string, string>>({});
+  const [termStatusMap, setTermStatusMap] = useState<Record<string, string>>(
+    {}
+  );
   const [semesters, setSemesters] = useState<any[]>([]);
 
   useEffect(() => {
@@ -78,8 +81,8 @@ const StudentScoresList = () => {
         console.error("Lỗi khi lấy danh sách kỳ học:", err);
       }
     };
-    
-    fetchSemesters();    
+
+    fetchSemesters();
   }, []);
 
   const fetchStudents = async (
@@ -138,7 +141,7 @@ const StudentScoresList = () => {
       setLoading(false);
     }
   };
-  
+
   const fetchStudentsByClassId = async (classId: string) => {
     try {
       setSelectedClassId(classId);
@@ -233,7 +236,7 @@ const StudentScoresList = () => {
       console.error("Lỗi khi lấy học lực theo kỳ:", err);
       return "Chưa có";
     }
-  };  
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -324,6 +327,11 @@ const StudentScoresList = () => {
           <FaSearch className="absolute left-3 top-3 text-gray-400" />
         </div>
         <div className="relative">
+          <button className="border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+            <RiExportFill />
+          </button>
+        </div>
+        <div className="relative">
           <select
             className="px-4 py-2 pl-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
             value={statusFilter}
@@ -356,7 +364,10 @@ const StudentScoresList = () => {
                     setSelectedTerm(semesterId);
                     const newStatusMap: Record<string, string> = {};
                     for (const student of filteredStudents) {
-                      const status = await fetchStatusByTerm(student._id, semesterId);
+                      const status = await fetchStatusByTerm(
+                        student._id,
+                        semesterId
+                      );
                       newStatusMap[student._id] = status;
                     }
                     setTermStatusMap(newStatusMap);
@@ -383,44 +394,45 @@ const StudentScoresList = () => {
 
               return (
                 <tr key={student._id} className="border-t hover:bg-gray-50">
-                <td className="py-3 px-4">{student.name}</td>
-                <td className="py-3 px-4">
-                  {student.class_id || classId
-                    ? student.class_id || classId
-                    : "Chưa có lớp"}
-                </td>
-                <td className="py-3 px-4">{student.tdt_id}</td>
-                <td className="py-3 px-4">
-                  {student.status ? (
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${getStatusClass(
-                        statusToShow
-                      )}`}
+                  <td className="py-3 px-4">{student.name}</td>
+                  <td className="py-3 px-4">
+                    {student.class_id || classId
+                      ? student.class_id || classId
+                      : "Chưa có lớp"}
+                  </td>
+                  <td className="py-3 px-4">{student.tdt_id}</td>
+                  <td className="py-3 px-4">
+                    {student.status ? (
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${getStatusClass(
+                          statusToShow
+                        )}`}
+                      >
+                        {statusToShow}
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-xs italic">
+                        Chưa có kết quả
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    {new Date(student.date_of_birth).toLocaleDateString(
+                      "vi-VN"
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <button
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={() => handleViewDetails(student.tdt_id)}
                     >
-                      {statusToShow}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500 text-xs italic">
-                      Chưa có kết quả
-                    </span>
-                  )}
-                </td>
-                <td className="py-3 px-4">
-                  {new Date(student.date_of_birth).toLocaleDateString("vi-VN")}
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <button
-                    className="text-blue-500 hover:text-blue-700"
-                    onClick={() => handleViewDetails(student.tdt_id)}
-                  >
-                    <FaInfoCircle size={20} />
-                  </button>
-                </td>
-              </tr>
+                      <FaInfoCircle size={20} />
+                    </button>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
-
         </table>
       </div>
     </div>

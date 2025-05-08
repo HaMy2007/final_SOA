@@ -11,6 +11,7 @@ import DepartmentDetail from "./pages/admin/DepartmentDetail";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import TeacherDetailInDepartment from "./pages/admin/TeacherDetailInDepartment";
 import ClassManagementForSubjectTeacher from "./pages/advisor/ClassManagementForSubjectTeacher";
+import Dashboard from "./pages/advisor/Dashboard";
 import SubjectTeacherScoreDetail from "./pages/advisor/SubjectTeacherScoreDetail";
 import ChangePassword from "./pages/ChangePassword";
 import DatabaseManagement from "./pages/DatabaseManagement";
@@ -21,6 +22,7 @@ import Login from "./pages/Login";
 import NoPage from "./pages/NoPage";
 import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
+import Schedule from "./pages/Schedule";
 import PersonalScore from "./pages/student/PersonalScore";
 import StudentInfor from "./pages/StudentInfor";
 import StudentScoreDetail from "./pages/StudentScoreDetail";
@@ -53,6 +55,7 @@ const App = () => {
           <Route path="class" element={<ClassManagement />} />
           <Route path="class/:classId" element={<ClassDetail />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="schedule" element={<Schedule />} />
           <Route path="*" element={<NoPage />} />
           <Route path="studentScore" element={<StudentScoresList />} />
           <Route
@@ -99,6 +102,9 @@ const App = () => {
           <Route index element={<Home />} />
           <Route path="forum" element={<Forum />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="schedule" element={<Schedule />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          {/* <Route path="dashboard" element={<Dashboard />} /> */}
           <Route
             path="classForSubjectTeacher"
             element={<ClassManagementForSubjectTeacher />}
@@ -120,7 +126,7 @@ const App = () => {
             element={<SubjectTeacherScoreDetail />}
           />
           <Route path="databaseManagement" element={<DatabaseManagement />} />
-          <Route path="dashboard" element={<DepartmentManagement />} />
+          {/* <Route path="dashboard" element={<DepartmentManagement />} /> */}
           <Route path="studentScore" element={<StudentScoresList />} />
           <Route
             path="studentDetail/:studentId"
@@ -141,6 +147,7 @@ const App = () => {
           <Route index element={<Home />} />
           <Route path="forum" element={<Forum />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="schedule" element={<Schedule />} />
           <Route path="personalScore" element={<PersonalScore />} />
           <Route path="*" element={<NoPage />} />
         </Route>

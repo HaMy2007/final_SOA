@@ -19,18 +19,26 @@ const Sidebar = () => {
     );
   }, [user]);
 
+  const isHomeroomTeacher = useMemo(() => {
+    return (
+      user.role === "advisor" &&
+      Array.isArray(user.advisor_type) &&
+      !user.advisor_type.includes("subject_teacher")
+    );
+  }, [user]);
+
   const filteredMenuItems = menuItems.filter((item) => {
     if (isSubjectTeacher) {
-      if (item.path === "studentScore") {
-        return false;
-      }
-      if (item.path === "students") {
-        return false;
-      }
+      if (item.path === "studentScore") return false;
+      if (item.path === "dashboard") return false;
     } else {
-      if (item.path === "students") {
-        return true;
-      }
+    }
+
+    if (isHomeroomTeacher) {
+      if (item.path === "dashboard") return true;
+      if (item.path === "students") return true;
+    } else {
+      if (item.path === "students") return false;
     }
 
     return item.allowedRoles.includes(userRole);
@@ -52,7 +60,8 @@ const Sidebar = () => {
       <div className="flex-1 flex flex-col gap-2">
         {filteredMenuItems.map((item) => {
           const Icon = item.icon;
-          const fullPath = `/${userRole}/${item.path}`;
+          // const fullPath = `/${userRole}/${item.path}`;
+          let fullPath = `/${userRole}/${item.path}`;
 
           return (
             <button
