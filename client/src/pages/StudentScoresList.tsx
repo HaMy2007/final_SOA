@@ -326,11 +326,7 @@ const StudentScoresList = () => {
           />
           <FaSearch className="absolute left-3 top-3 text-gray-400" />
         </div>
-        <div className="relative">
-          <button className="border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-            <RiExportFill />
-          </button>
-        </div>
+
         <div className="relative">
           <select
             className="px-4 py-2 pl-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
@@ -346,6 +342,10 @@ const StudentScoresList = () => {
           </select>
           <FaFilter className="absolute left-3 top-3 text-gray-400" />
         </div>
+
+        <button className="px-4 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700 ">
+          <RiExportFill className="text-white" />
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg shadow">
