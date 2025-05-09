@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
-import { GrScorecard } from "react-icons/gr";
+import { GrSchedule, GrScorecard } from "react-icons/gr";
 import { ImProfile } from "react-icons/im";
 import { IoMdInformationCircle } from "react-icons/io";
 import {
@@ -11,6 +11,7 @@ import {
   MdOutlineDashboardCustomize,
   MdOutlineScore,
 } from "react-icons/md";
+import { RxDashboard } from "react-icons/rx";
 import { SiInformatica } from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
 import { useClass } from "../context/ClassContext";
@@ -156,6 +157,13 @@ const Home = () => {
                 >
                   <FaUser className="w-12 h-12 text-purple-700" />
                   <span className="ml-2 text-xl">Thông tin cá nhân</span>
+                </Link>
+                <Link
+                  to={`/${role}/schedule`}
+                  className="bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <GrSchedule className="w-12 h-12 text-amber-600" />
+                  <span className="ml-2 text-xl">Thời khóa biểu</span>
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -317,6 +325,13 @@ const Home = () => {
                 <ImProfile className="w-12 h-12 text-red-400" />
                 <span className="ml-2 text-xl">Hồ sơ cá nhân</span>
               </Link>
+              <Link
+                to={`/${role}/schedule`}
+                className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+              >
+                <GrSchedule className="w-12 h-12 text-amber-600" />
+                <span className="ml-2 text-xl">Thời khóa biểu</span>
+              </Link>
               {/* <button
                 onClick={handleLogout}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex items-center flex-col w-full"
@@ -392,6 +407,13 @@ const Home = () => {
                 <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
                 <span className="ml-2 text-xl">Thông tin học sinh</span>
               </Link>
+              <Link
+                to={`/${role}/schedule`}
+                className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+              >
+                <GrSchedule className="w-12 h-12 text-amber-600" />
+                <span className="ml-2 text-xl">Thời khóa biểu</span>
+              </Link>
               {isHomeroomTeacher ? (
                 <Link
                   to={`/${role}/studentScore`}
@@ -399,6 +421,16 @@ const Home = () => {
                 >
                   <MdOutlineScore className="w-12 h-12 text-blue-400" />
                   <span className="ml-2 text-xl">Bảng điểm</span>
+                </Link>
+              ) : null}
+
+              {isHomeroomTeacher ? (
+                <Link
+                  to={`/${role}/dashboard`}
+                  className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <RxDashboard className="w-12 h-12 text-amber-800" />
+                  <span className="ml-2 text-xl">Tổng quan</span>
                 </Link>
               ) : null}
 
