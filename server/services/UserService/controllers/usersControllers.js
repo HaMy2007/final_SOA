@@ -348,6 +348,8 @@ async function insertUsers(users, res) {
       gender,
       phone_number,
       date_of_birth,
+      parent_number,
+      parent_email
     } = u;
 
     if (
@@ -392,8 +394,9 @@ async function insertUsers(users, res) {
       date_of_birth: new Date(date_of_birth),
     });
 
-    if (trimmedRole === "student" && u.parent_number) {
-      newUser.parent_number = u.parent_number.trim();
+    if (trimmedRole === "student") {
+      if (parent_number) newUser.parent_number = parent_number.trim();
+      if (parent_email) newUser.parent_email = parent_email.trim();
     }
 
     const savedUser = await newUser.save();

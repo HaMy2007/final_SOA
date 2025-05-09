@@ -31,6 +31,7 @@ const Sidebar = () => {
     if (isSubjectTeacher) {
       if (item.path === "studentScore") return false;
       if (item.path === "dashboard") return false;
+      if (item.path === "students") return false;
     } else {
     }
 
@@ -38,7 +39,6 @@ const Sidebar = () => {
       if (item.path === "dashboard") return true;
       if (item.path === "students") return true;
     } else {
-      if (item.path === "students") return false;
     }
 
     return item.allowedRoles.includes(userRole);
