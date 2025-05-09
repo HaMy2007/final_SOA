@@ -35,7 +35,8 @@ const scheduleSchema = new mongoose.Schema(
         version: {
             type: Number,
             default: 1
-        }
+        },
+        isApproved: { type: Boolean, default: false },
     }
 );
 

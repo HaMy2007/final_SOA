@@ -522,7 +522,7 @@ exports.updateScore = async (req, res) => {
           0
         );
         scoreboard.gpa = (totalGPA / scoreboard.subjects.length).toFixed(2);
-
+        scoreboard.status = getStatusFromGPA(scoreboard.gpa);
         await scoreboard.save();
       }
     }
@@ -950,7 +950,6 @@ exports.sendReportCardsToClassParents = async (req, res) => {
       return res.status(400).json({ message: "ID học kỳ không hợp lệ" });
     }
 
-    // Lấy danh sách học sinh theo lớp
     const studentsRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
     const students = studentsRes.data.students;
 
@@ -965,7 +964,6 @@ exports.sendReportCardsToClassParents = async (req, res) => {
 
     for (const student of students) {
       try {
-        // Lấy thông tin chi tiết của học sinh
         const studentRes = await axios.get(`http://localhost:4003/api/users/${student._id}`);
         const studentDetail = studentRes.data;
 
@@ -974,11 +972,9 @@ exports.sendReportCardsToClassParents = async (req, res) => {
           continue;
         }
 
-        // Lấy giáo viên chủ nhiệm
         const teacherRes = await axios.get(`http://localhost:4000/api/students/${student._id}/advisor`);
         const teacher = teacherRes.data;
 
-        // Lấy điểm học kỳ
         const scoresRes = await axios.get(
           `http://localhost:4002/api/students/${student._id}/scores?semester_id=${semesterId}`
         );
@@ -1027,7 +1023,6 @@ exports.sendReportCardsToClassParents = async (req, res) => {
           <p>Người gửi: <strong>GVCN ${teacher.advisor?.name || "Không rõ"}</strong></p>
         `;
 
-        // Gửi email
         const transporter = nodemailer.createTransport({
           service: "gmail",
           auth: {
@@ -1056,5 +1051,92 @@ exports.sendReportCardsToClassParents = async (req, res) => {
   } catch (error) {
     console.error("Lỗi gửi bảng điểm theo lớp:", error.message);
     res.status(500).json({ message: "Lỗi server khi gửi bảng điểm theo lớp" });
+  }
+};
+
+const getCurrentSemester = async () => {
+  const res = await axios.get("http://localhost:4001/api/semesters/current");
+  return res.data; 
+};
+
+const scheduleReportCardSending = async (testMode = false, testDateTime = null) => {
+  const semester = await getCurrentSemester();
+  if (!semester || !semester._id || !semester.end_date) {
+    throw new Error("Dữ liệu học kỳ không hợp lệ.");
+  }
+
+  // const endDateUTC = new Date(semester.end_date);
+  // const endDateVN = new Date(endDateUTC.getTime() + 7 * 60 * 60 * 1000);
+  // endDateVN.setHours(23, 18, 0, 0);
+
+  if (testMode && testDateTime) {
+    // Use provided test date/time (in Vietnam time, UTC+7)
+    endDateVN = new Date(testDateTime);
+    console.log("🧪 Chạy ở chế độ kiểm thử với thời gian:", endDateVN.toLocaleString());
+  } else {
+    // Normal logic: Use semester.end_date and set to 23:04:00 Vietnam time
+    const endDateUTC = new Date(semester.end_date);
+    endDateVN = new Date(endDateUTC.getTime() + 7 * 60 * 60 * 1000); // Convert to UTC+7
+    endDateVN.setHours(23, 4, 0, 0); // Set to 23:04:00
+  }
+
+  const now = new Date();
+  const timeUntilSend = endDateVN.getTime() - now.getTime();
+
+  if (timeUntilSend <= 0) {
+    console.log("Đã quá thời gian gửi hoặc thời gian không hợp lệ.");
+    return;
+  }
+
+  console.log(`Hẹn gửi vào ${endDateVN.toLocaleString()} (còn ${Math.floor(timeUntilSend / 1000)} giây)`);
+
+  setTimeout(async () => {
+    try {
+      console.log("Bắt đầu gửi bảng điểm...");
+
+      const classListRes = await axios.get(`http://localhost:4000/api/classes/khoi`);
+      const classes = classListRes.data;
+      const semesterId = semester._id;
+
+      for (const classItem of classes) {
+        const classId = classItem.class_id;
+        if (!classId) {
+          continue;
+        }
+        try {
+          await axios.post(`http://localhost:4002/api/students/send-report-card/${classId}?semester_id=${semesterId}`);
+          console.log(`Gửi thành công cho lớp ${classId}`);
+        } catch (err) {
+          if (err.response && err.response.status === 404) {
+            console.log(`Lớp ${classItem.name || classId} không có dữ liệu để gửi.`);
+            continue;
+          }
+          console.error(`Lỗi gửi Weil ${classItem.name || classId}: ${err.message}`);
+            if (err.response) {
+              console.error(`Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}`);
+            }
+        }
+      }
+
+      console.log("Đã gửi bảng điểm cho tất cả lớp.");
+    } catch (err) {
+      console.error("Lỗi khi gửi bảng điểm:", err.message);
+    }
+  }, timeUntilSend);
+};
+
+exports.sendEmail = async (req, res) => {
+  try {
+    console.log("API đã nhận yêu cầu gửi bảng điểm.");
+
+    await scheduleReportCardSending(true, "2025-05-09T23:28:00.000+07:00");
+
+    res.status(200).send('Đã lên lịch gửi bảng điểm.');
+  } catch (err) {
+    console.error("Lỗi trong quá trình gửi bảng điểm:", err.message);
+    if (err.response) {
+      console.error(`Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}`);
+    }
+    res.status(500).send("Lỗi khi lên lịch gửi bảng điểm.");
   }
 };

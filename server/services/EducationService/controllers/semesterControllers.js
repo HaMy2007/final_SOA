@@ -96,4 +96,22 @@ exports.importSemesters = async (req, res) => {
     }
   };
   
+  exports.getCurrentSemester = async (req, res) => {
+    try {
+      const now = new Date();
   
+      const currentSemester = await Semester.findOne({
+        start_date: { $lte: now },
+        end_date: { $gte: now }
+      });
+  
+      if (!currentSemester) {
+        return res.status(404).json({ message: "Không có học kỳ hiện tại" });
+      }
+  
+      res.status(200).json(currentSemester);
+    } catch (error) {
+      console.error("Lỗi khi lấy học kỳ hiện tại:", error.message);
+      res.status(500).json({ message: "Lỗi server" });
+    }
+  };

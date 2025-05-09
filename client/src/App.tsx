@@ -12,6 +12,7 @@ import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import TeacherDetailInDepartment from "./pages/admin/TeacherDetailInDepartment";
 import ClassManagementForSubjectTeacher from "./pages/advisor/ClassManagementForSubjectTeacher";
 import Dashboard from "./pages/advisor/Dashboard";
+import TeacherSchedule from "./pages/advisor/TeacherSchedule.tsx";
 import SubjectTeacherScoreDetail from "./pages/advisor/SubjectTeacherScoreDetail";
 import ChangePassword from "./pages/ChangePassword";
 import DatabaseManagement from "./pages/DatabaseManagement";
@@ -24,6 +25,7 @@ import Profile from "./pages/Profile";
 import ResetPassword from "./pages/ResetPassword";
 import Schedule from "./pages/Schedule";
 import PersonalScore from "./pages/student/PersonalScore";
+import StudentSchedule from "./pages/student/StudentSchedule.tsx";
 import StudentInfor from "./pages/StudentInfor";
 import StudentScoreDetail from "./pages/StudentScoreDetail";
 import StudentScoresList from "./pages/StudentScoresList";
@@ -102,7 +104,7 @@ const App = () => {
           <Route index element={<Home />} />
           <Route path="forum" element={<Forum />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="schedule" element={<Schedule />} />
+          <Route path="schedule" element={<TeacherSchedule />} />
           <Route path="dashboard" element={<Dashboard />} />
           {/* <Route path="dashboard" element={<Dashboard />} /> */}
           <Route
@@ -147,8 +149,9 @@ const App = () => {
           <Route index element={<Home />} />
           <Route path="forum" element={<Forum />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="schedule" element={<Schedule />} />
+          {/* <Route path="schedule" element={<Schedule />} /> */}
           <Route path="personalScore" element={<PersonalScore />} />
+          <Route path="studentSchedule" element={<StudentSchedule />} />
           <Route path="*" element={<NoPage />} />
         </Route>
       </Routes>
