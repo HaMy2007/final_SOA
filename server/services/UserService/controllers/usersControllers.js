@@ -23,6 +23,23 @@ exports.getUsersByIds = async (req, res) => {
   }
 };
 
+exports.getTeacherByIds = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ message: "Danh sách ids không hợp lệ" });
+    }
+
+    const users = await User.find({ _id: { $in: ids }, role: "advisor" });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Lỗi truy vấn học sinh:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
 exports.getAllStudents = async (req, res) => {
   const students = await User.find({ role: "student" });
   res.json(students);

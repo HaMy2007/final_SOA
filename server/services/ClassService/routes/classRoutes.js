@@ -4,6 +4,8 @@ const classController = require("../controllers/classControllers");
 const upload = require('../middlewares/upload');
 const { authenticateToken, authorizeRoles } = require("../../../middleware/auth");
 
+router.get('/classes/khoi', classController.getAllClasstwo);
+
 router.get('/classes/:id/students', classController.getClassStudents);
 router.get('/teachers/:id/class', classController.getClassesByTeacher);
 router.get('/students/:id/advisor', classController.getAdvisorOfStudent);

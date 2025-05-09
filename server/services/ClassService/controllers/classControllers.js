@@ -856,3 +856,15 @@ exports.getSubjectsOfClass = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+exports.getAllClasstwo = async (req, res) => {
+  try {
+    const classes = await Class.find({ class_name: 'Khối 12' }).lean();
+    if (classes.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy lớp nào thuộc Khối 12' });
+    }
+    res.json(classes);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
