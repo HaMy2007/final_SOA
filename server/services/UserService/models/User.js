@@ -63,6 +63,7 @@ const UserSchema = new Schema(
     gender: { type: String, enum: ["male", "female", "other"], required: true },
     phone_number: { type: String, required: true },
     parent_number: { type: String },
+    parent_email: { type: String },
     address: { type: String },
     date_of_birth: { type: Date, required: true },
     email: { type: String, required: true, unique: true },

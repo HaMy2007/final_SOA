@@ -12,5 +12,6 @@ router.get("/scores/:studentId/by-teacher/:tdt_id", scoreController.getStudentSc
 router.get('/export/pdf', scoreController.exportClassScoresPdf);
 router.get('/export/pdf/total', scoreController.exportClassSummaryPdf);
 router.get('/export/pdf/subject', scoreController.exportSubjectScoresPdf);
+router.post('/send-report-card/:class_id', scoreController.sendReportCardsToClassParents);
 
 module.exports = router;
