@@ -857,11 +857,11 @@ exports.getSubjectsOfClass = async (req, res) => {
   }
 };
 
-exports.getAllClasstwo = async (req, res) => {
+exports.getAllClasses = async (req, res) => {
   try {
-    const classes = await Class.find({ class_name: 'Khối 12' }).lean();
+    const classes = await Class.find();
     if (classes.length === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp nào thuộc Khối 12' });
+      return res.status(404).json({ message: 'Không tìm thấy lớp nào' });
     }
     res.json(classes);
   } catch (error) {

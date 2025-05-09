@@ -8,6 +8,8 @@ const xlsx = require("xlsx");
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const { Table } = require('pdfkit-table');
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 exports.getStudentScoresGroupedBySemester = async (req, res) => {
   try {
@@ -933,5 +935,126 @@ exports.exportSubjectScoresPdf = async (req, res) => {
     if (!res.headersSent) {
       res.status(500).json({ message: 'Xuất PDF thất bại' });
     }
+  }
+};
+
+exports.sendReportCardsToClassParents = async (req, res) => {
+  try {
+    const classId = req.params.class_id;
+    const semesterId = req.query.semester_id;
+
+    if (!classId){
+      return res.status(400).json({ message: "ID class không hợp lệ" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(semesterId)) {
+      return res.status(400).json({ message: "ID học kỳ không hợp lệ" });
+    }
+
+    // Lấy danh sách học sinh theo lớp
+    const studentsRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
+    const students = studentsRes.data.students;
+
+    if (!Array.isArray(students) || !students.length) {
+      return res.status(404).json({ message: "Không tìm thấy học sinh trong lớp" });
+    }
+
+    const semesterRes = await axios.get(`http://localhost:4001/api/semesters/${semesterId}`);
+    const semester = semesterRes.data;
+
+    const results = [];
+
+    for (const student of students) {
+      try {
+        // Lấy thông tin chi tiết của học sinh
+        const studentRes = await axios.get(`http://localhost:4003/api/users/${student._id}`);
+        const studentDetail = studentRes.data;
+
+        if (!studentDetail || studentDetail.role !== "student" || !studentDetail.parent_email) {
+          results.push({ student: studentDetail?.name || "Không rõ", status: "Thiếu thông tin học sinh hoặc email phụ huynh" });
+          continue;
+        }
+
+        // Lấy giáo viên chủ nhiệm
+        const teacherRes = await axios.get(`http://localhost:4000/api/students/${student._id}/advisor`);
+        const teacher = teacherRes.data;
+
+        // Lấy điểm học kỳ
+        const scoresRes = await axios.get(
+          `http://localhost:4002/api/students/${student._id}/scores?semester_id=${semesterId}`
+        );
+        const scoreData = scoresRes.data;
+
+        if (!scoreData || !scoreData.scores?.length) {
+          results.push({ student: studentDetail.name, status: "Không có bảng điểm" });
+          continue;
+        }
+
+        const tableHtml = scoreData.scores
+          .map((s, idx) => {
+            return `<tr>
+              <td>${idx + 1}</td>
+              <td>${s.subject_code}</td>
+              <td>${s.subject_name}</td>
+              <td>${s.score_15p ?? "-"}</td>
+              <td>${s.score_1tiet ?? "-"}</td>
+              <td>${s.score_giuaky ?? "-"}</td>
+              <td>${s.score_cuoiky ?? "-"}</td>
+              <td><strong>${s.score ?? "-"}</strong></td>
+            </tr>`;
+          })
+          .join("");
+
+        const html = `
+          <h3>Xin chào phụ huynh của học sinh ${studentDetail.name}</h3>
+          <p>Đây là bảng điểm học kỳ của con bạn trong học kì ${semester.semester_name}:</p>
+          <table border="1" cellpadding="5" cellspacing="0">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã môn</th>
+                <th>Môn học</th>
+                <th>15 phút</th>
+                <th>1 tiết</th>
+                <th>Giữa kỳ</th>
+                <th>Cuối kỳ</th>
+                <th>Điểm trung bình</th>
+              </tr>
+            </thead>
+            <tbody>${tableHtml}</tbody>
+          </table>
+          <p>Điểm trung bình học kỳ: <strong>${scoreData.gpa?.toFixed(2) || "-"}</strong></p>
+          <p>Xếp loại học lực: <strong>${scoreData.status || "-"}</strong></p>
+          <p>Người gửi: <strong>GVCN ${teacher.advisor?.name || "Không rõ"}</strong></p>
+        `;
+
+        // Gửi email
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.ADMIN_EMAIL,
+            pass: process.env.ADMIN_EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `"Trường THPT" <${process.env.ADMIN_EMAIL}>`,
+          to: studentDetail.parent_email,
+          subject: `Bảng điểm học kỳ của ${studentDetail.name}`,
+          html,
+        });
+
+        results.push({ student: studentDetail.name, status: "Đã gửi email" });
+      } catch (innerErr) {
+        results.push({ student: student.name, status: `Lỗi: ${innerErr.message}` });
+      }
+    }
+
+    res.status(200).json({
+      message: `Đã xử lý gửi email cho phụ huynh của lớp`,
+      result: results,
+    });
+  } catch (error) {
+    console.error("Lỗi gửi bảng điểm theo lớp:", error.message);
+    res.status(500).json({ message: "Lỗi server khi gửi bảng điểm theo lớp" });
   }
 };
