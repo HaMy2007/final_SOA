@@ -9,7 +9,12 @@ const ClassSchema = new Schema(
         class_member: [{ type: mongoose.Schema.Types.ObjectId, ref: 'users' }],
         subject_teacher: [
             { type: Schema.Types.ObjectId, ref: 'users' }
-        ]
+        ],
+        graduation_year: {
+            type: Number,
+            default: null
+        },
+        is_graduated: { type: Boolean, default: false },
     },
     {
         timestamps: true,

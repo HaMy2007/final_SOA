@@ -6,6 +6,7 @@ const { authenticateToken,  authorizeRoles, } = require("../../../middleware/aut
 
 router.get("/advisors", userController.getAllAdvisors);
 router.post("/batch", userController.getUsersByIds);
+router.post("/teachers", userController.getTeacherByIds);
 router.put("/:id", authenticateToken,  authorizeRoles("admin", "advisor"),  userController.updateUserProfile);
 router.get("/:id", userController.getUserById);
 router.post("/import-file",  upload.single("file"),  authenticateToken,  authorizeRoles("admin"),  userController.importUsersFromFile); //admin import user
