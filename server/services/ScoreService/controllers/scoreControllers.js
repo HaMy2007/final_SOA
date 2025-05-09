@@ -5,6 +5,9 @@ const axios = require("axios");
 const fs = require("fs");
 const csv = require("csv-parser");
 const xlsx = require("xlsx");
+const PDFDocument = require('pdfkit');
+const path = require('path');
+const { Table } = require('pdfkit-table');
 
 exports.getStudentScoresGroupedBySemester = async (req, res) => {
   try {
@@ -490,10 +493,10 @@ exports.updateScore = async (req, res) => {
     const finalPoints = scores["cuoiky"] || 0;
 
     const subjectGPA =
-      fifteenPoints * 0.1 +
+      (fifteenPoints * 0.1 +
       oneTestPoints * 0.2 +
       midtermPoints * 0.2 +
-      finalPoints * 0.5;
+      finalPoints * 0.5).toFixed(2);
 
     const scoreboard = await Scoreboard.findOne({ user_id, semester_id });
     if (scoreboard) {
@@ -516,7 +519,7 @@ exports.updateScore = async (req, res) => {
           (acc, subj) => acc + subj.subjectGPA,
           0
         );
-        scoreboard.gpa = totalGPA / scoreboard.subjects.length;
+        scoreboard.gpa = (totalGPA / scoreboard.subjects.length).toFixed(2);
 
         await scoreboard.save();
       }
@@ -591,5 +594,344 @@ exports.getStudentScoreboardByTeacher = async (req, res) => {
   } catch (err) {
     console.error("Lỗi khi lấy bảng điểm theo giáo viên:", err.message);
     res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.exportClassScoresPdf = async (req, res) => {
+  const doc = new PDFDocument({ size: 'A4', margin: 40, autoFirstPage: false });
+
+  try {
+    const { classId, semesterId } = req.query;
+
+    if (!classId || !semesterId) {
+      return res.status(400).json({ message: 'Thiếu classId hoặc semesterId' });
+    }
+
+    const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
+    const students = classRes.data.students;
+
+    const semesterRes = await axios.get(`http://localhost:4001/api/semesters/${semesterId}`);
+    const semester = semesterRes.data;
+
+    const fontPath = path.join(__dirname, '../fonts', 'Roboto-Regular.ttf');
+    if (!fs.existsSync(fontPath)) {
+      return res.status(500).json({ message: 'Font không tìm thấy' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=scoreboard.pdf');
+
+    doc.pipe(res);
+
+    doc.font(fontPath);
+
+    for (const student of students) {
+      const user = await axios.get(`http://localhost:4003/api/users/${student._id}`);
+      const st = user.data;
+      doc.addPage();
+      doc.fontSize(16).text(`BẢNG ĐIỂM HỌC KỲ ${semester.semester_name}`, { align: 'center' });
+      doc.fontSize(14).text(`Họ tên: ${st.name}`, { align: 'left' });
+      doc.fontSize(12).text(`Mã học sinh: ${st.tdt_id}`);
+      doc.text(`Lớp: ${classRes.data.class_id}`);
+      doc.moveDown();
+
+      let scoreRes;
+      try {
+        scoreRes = await axios.get(`http://localhost:4002/api/students/${student._id}/scores`, {
+          params: { semester_id: semesterId }
+        });
+      } catch (e) {
+        doc.text('Không lấy được điểm cho học sinh này.');
+        continue; 
+      }
+
+      const scores = scoreRes.data.scores || [];
+
+      const headers = [
+        'Mã môn', 'Tên môn học', '15 phút', '1 tiết', 'Giữa kỳ', 'Cuối kỳ', 'Trung bình'
+      ];
+
+      const startX = 40; 
+      let startY = 110; 
+      const columnWidths = [60, 150, 60, 60, 60, 60, 70]; 
+      const rowHeight = 20;
+
+      headers.forEach((header, index) => {
+        doc.rect(startX + columnWidths.slice(0, index).reduce((acc, width) => acc + width, 0), startY, columnWidths[index], rowHeight).stroke();
+        doc.text(header, startX + columnWidths.slice(0, index).reduce((acc, width) => acc + width, 0) + 5, startY + 5);
+      });
+
+      startY += rowHeight;
+
+      scores.forEach((item) => {
+        const rowData = [
+          item.subject_code,
+          item.subject_name,
+          item.score_15p || '-',
+          item.score_1tiet || '-',
+          item.score_giuaky || '-',
+          item.score_cuoiky || '-',
+          item.score || '-'
+        ];
+
+        rowData.forEach((data, index) => {
+          doc.rect(startX + columnWidths.slice(0, index).reduce((acc, width) => acc + width, 0), startY, columnWidths[index], rowHeight).stroke();
+          doc.text(data, startX + columnWidths.slice(0, index).reduce((acc, width) => acc + width, 0) + 5, startY + 5);
+        });
+
+        startY += rowHeight; 
+      });
+
+      doc.moveDown();
+      doc.fontSize(12).text(`Điểm trung bình học kỳ: ${scoreRes.data.gpa || 'N/A'}`, startX);
+      doc.text(`Xếp loại: ${scoreRes.data.status || 'Không rõ'}`, startX);
+    }
+
+    doc.end(); 
+
+  } catch (err) {
+    console.error('Lỗi export PDF:', err.message);
+
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Xuất PDF thất bại' });
+    }
+  }
+};
+
+exports.exportClassSummaryPdf = async (req, res) => {
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+
+  try {
+    const { classId, semesterId } = req.query;
+
+    if (!classId || !semesterId) {
+      return res.status(400).json({ message: 'Thiếu classId hoặc semesterId' });
+    }
+
+    const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
+    const students = classRes.data.students;
+
+    const semesterRes = await axios.get(`http://localhost:4001/api/semesters/${semesterId}`);
+    const semester = semesterRes.data;
+
+    const fontPath = path.join(__dirname, '../fonts', 'Roboto-Regular.ttf');
+    if (!fs.existsSync(fontPath)) {
+      return res.status(500).json({ message: 'Font không tìm thấy' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=class-summary.pdf');
+
+    doc.pipe(res);
+    doc.font(fontPath);
+
+    // Tiêu đề
+    doc.fontSize(16).text(`BẢNG TỔNG KẾT LỚP ${classRes.data.class_id} - HỌC KỲ ${semester.semester_name}`, {
+      align: 'center',
+      underline: true
+    });
+    doc.moveDown(1.5);
+
+    const headers = ['STT', 'Mã học sinh', 'Họ tên', 'Điểm trung bình', 'Xếp loại'];
+    const columnWidths = [40, 100, 180, 120, 80];
+    const startX = 40;
+    let startY = 100;
+    const rowHeight = 25;
+
+    // Vẽ header
+    headers.forEach((header, index) => {
+      const x = startX + columnWidths.slice(0, index).reduce((acc, w) => acc + w, 0);
+      doc.rect(x, startY, columnWidths[index], rowHeight).stroke();
+      doc.fontSize(12).text(header, x + 5, startY + 7);
+    });
+
+    startY += rowHeight;
+
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+
+      let userRes;
+      try {
+        userRes = await axios.get(`http://localhost:4003/api/users/${student._id}`);
+      } catch (e) {
+        continue; // Bỏ qua nếu không lấy được thông tin user
+      }
+
+      let scoreRes;
+      try {
+        scoreRes = await axios.get(`http://localhost:4002/api/students/${student._id}/scores`, {
+          params: { semester_id: semesterId }
+        });
+      } catch (e) {
+        continue; // Bỏ qua nếu không lấy được điểm
+      }
+
+      const st = userRes.data;
+      const gpa = scoreRes.data.gpa || '-';
+      const status = scoreRes.data.status || '-';
+
+      const row = [
+        i + 1,
+        st.tdt_id || '-',
+        st.name || '-',
+        gpa,
+        status
+      ];
+
+      if (startY + rowHeight > doc.page.height - 40) {
+        doc.addPage();
+        startY = 40;
+        printHeader();
+      }
+
+      row.forEach((data, index) => {
+        const x = startX + columnWidths.slice(0, index).reduce((acc, w) => acc + w, 0);
+        doc.rect(x, startY, columnWidths[index], rowHeight).stroke();
+        doc.fontSize(11).text(data.toString(), x + 5, startY + 7);
+      });
+
+      startY += rowHeight;      
+    }
+
+    doc.end();
+
+  } catch (err) {
+    console.error('Lỗi export PDF:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Xuất PDF thất bại' });
+    }
+  }
+};
+
+exports.exportSubjectScoresPdf = async (req, res) => {
+  const doc = new PDFDocument({ size: 'A4', margin: 40 });
+
+  try {
+    const { classId, semesterId, teacherId } = req.query;
+
+    if (!classId || !semesterId || !teacherId) {
+      return res.status(400).json({ message: 'Thiếu classId, semesterId hoặc teacherId' });
+    }
+
+    const fontPath = path.join(__dirname, '../fonts', 'Roboto-Regular.ttf');
+    if (!fs.existsSync(fontPath)) {
+      return res.status(500).json({ message: 'Font không tìm thấy' });
+    }
+
+    const classRes = await axios.get(`http://localhost:4000/api/classes/${classId}/students`);
+    const students = classRes.data.students;
+
+    const semesterRes = await axios.get(`http://localhost:4001/api/semesters/${semesterId}`);
+    const semester = semesterRes.data;
+
+    const teacherRes = await axios.get(`http://localhost:4001/api/departments/${teacherId}/subjects`);
+    const subjectList = teacherRes.data;
+
+    const subjectInfo = subjectList[0];
+
+    if (!Array.isArray(subjectList) || subjectList.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy môn học mà giáo viên đang dạy' });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=subject-score-${subjectInfo.subject_code}.pdf`);
+
+    doc.pipe(res);
+    doc.font(fontPath);
+
+    const columnWidths = [40, 70, 150, 50, 50, 50, 50, 60];
+    const headers = ['STT', 'Mã HS', 'Họ tên', '15 phút', '1 tiết', 'Giữa kỳ', 'Cuối kỳ', 'TB môn'];
+    const startX = 20;
+    const rowHeight = 25;
+
+    let startY = 80;
+
+    const printTitle = () => {
+      doc.fontSize(16).text(
+        `BẢNG ĐIỂM MÔN ${subjectInfo.subject_name.toUpperCase()} - LỚP ${classRes.data.class_id}`,
+        { align: 'center', underline: true }
+      );
+      doc.fontSize(14).text(`HỌC KỲ: ${semester.semester_name}`, { align: 'center' });
+      doc.moveDown(1);
+      startY = doc.y;
+    };
+
+    const printHeader = () => {
+      headers.forEach((header, index) => {
+        const x = startX + columnWidths.slice(0, index).reduce((acc, w) => acc + w, 0);
+        doc.rect(x, startY, columnWidths[index], rowHeight).stroke();
+        doc.fontSize(12).text(header, x + 5, startY + 7);
+      });
+      startY += rowHeight;
+    };
+
+    printTitle();
+    printHeader();
+
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+
+      let userRes;
+      try {
+        userRes = await axios.get(`http://localhost:4003/api/users/${student._id}`);
+      } catch {
+        continue;
+      }
+
+      const st = userRes.data;
+
+      let scoresRes;
+      try {
+        scoresRes = await axios.get(`http://localhost:4002/api/students/${student._id}/scores`, {
+          params: { semester_id: semesterId }
+        });
+      } catch {
+        continue;
+      }
+
+      const scores = scoresRes.data.scores || [];
+
+      // Tìm điểm theo subject_id của giáo viên
+      const subjectScore = scores.find(
+        sc => sc.subject_id?.toString() === subjectInfo.subject_id?.toString()
+      );
+      
+      if (!subjectScore) {
+        continue; // Nếu học sinh không có điểm môn này thì bỏ qua
+      }
+      
+      const row = [
+        i + 1,
+        st.tdt_id || '-',
+        st.name || '-',
+        subjectScore?.score_15p ?? '-',
+        subjectScore?.score_1tiet ?? '-',
+        subjectScore?.score_giuaky ?? '-',
+        subjectScore?.score_cuoiky ?? '-',
+        subjectScore?.score ?? '-'
+      ];
+
+      // Nếu gần cuối trang, tạo trang mới + in header
+      if (startY + rowHeight > doc.page.height - 40) {
+        doc.addPage();
+        startY = 40;
+        printHeader();
+      }
+
+      row.forEach((data, index) => {
+        const x = startX + columnWidths.slice(0, index).reduce((acc, w) => acc + w, 0);
+        doc.rect(x, startY, columnWidths[index], rowHeight).stroke();
+        doc.fontSize(11).text(data.toString(), x + 5, startY + 7);
+      });
+
+      startY += rowHeight;
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error('Lỗi export PDF:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Xuất PDF thất bại' });
+    }
   }
 };
