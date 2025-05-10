@@ -643,7 +643,7 @@ exports.exportClassScoresPdf = async (req, res) => {
           params: { semester_id: semesterId }
         });
       } catch (e) {
-        doc.text('Không lấy được điểm cho học sinh này.');
+        doc.text('Học sinh này chưa có điểm.');
         continue; 
       }
 
@@ -685,7 +685,7 @@ exports.exportClassScoresPdf = async (req, res) => {
       });
 
       doc.moveDown();
-      doc.fontSize(12).text(`Điểm trung bình học kỳ: ${scoreRes.data.gpa || 'N/A'}`, startX);
+      doc.fontSize(12).text(`Điểm trung bình học kỳ: ${scoreRes.data.gpa.toFixed(2) || 'N/A'}`, startX);
       doc.text(`Xếp loại: ${scoreRes.data.status || 'Không rõ'}`, startX);
     }
 
@@ -769,7 +769,7 @@ exports.exportClassSummaryPdf = async (req, res) => {
       }
 
       const st = userRes.data;
-      const gpa = scoreRes.data.gpa || '-';
+      const gpa = scoreRes.data.gpa.toFixed(2) || '-';
       const status = scoreRes.data.status || '-';
 
       const row = [

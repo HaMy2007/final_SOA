@@ -71,22 +71,26 @@ const Dashboard: React.FC = () => {
   const [semesters, setSemesters] = useState<any[]>([]);
   const [selectedSemester, setSelectedSemester] = useState<string>("");
   const [classId, setClassId] = useState<string>("");
+console.log('Class ID:', classId);
 
-  // Lấy danh sách kỳ học
   useEffect(() => {
     const fetchSemesters = async () => {
       try {
-        const res = await axios.get("http://localhost:4001/api/semesters", {
+        const res = await axios.get(`http://localhost:4000/api/${classId}/available-semesters`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setSemesters(res.data);
+        setSemesters(res.data.semesters);
+
+        if (res.data.semesters.length > 0) {
+          setSelectedSemester(res.data.semesters[0]._id);
+        }
       } catch (err) {
         console.error("Lỗi khi lấy danh sách kỳ học:", err);
       }
     };
 
     fetchSemesters();
-  }, [token]);
+  }, [token, classId]);
 
   const handleSemesterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedSemester(e.target.value);
@@ -168,7 +172,7 @@ const Dashboard: React.FC = () => {
           let studentAverage = 0;
           let validScores = 0;
 
-          response.scores.forEach((score) => {
+          response.scores.forEach((score: any) => {
             if (!subjects[score.subject_name]) {
               subjects[score.subject_name] = [];
               passRates[score.subject_name] = { pass: 0, total: 0 };

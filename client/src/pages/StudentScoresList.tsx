@@ -13,15 +13,15 @@ const StudentScoresList = () => {
   const [originalStudents, setOriginalStudents] = useState<any[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportSummaryLoading, setExportSummaryLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [classId, setClassId] = useState<string>("");
   const [availableClasses, setAvailableClasses] = useState<any[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState("");
-  const [termStatusMap, setTermStatusMap] = useState<Record<string, string>>(
-    {}
-  );
+  const [termStatusMap, setTermStatusMap] = useState<Record<string, string>>({});
   const [semesters, setSemesters] = useState<any[]>([]);
 
   useEffect(() => {
@@ -238,6 +238,80 @@ const StudentScoresList = () => {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!classId) {
+      alert("Không tìm thấy lớp để xuất điểm!");
+      return;
+    }
+    if (!selectedTerm) {
+      alert("Vui lòng chọn một kỳ học để xuất điểm!");
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:4002/api/students/export/pdf`,
+        {
+          params: { classId: classId, semesterId: selectedTerm },
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "scoreboard.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Lỗi khi xuất PDF:", err);
+      alert("Không thể xuất bảng điểm. Vui lòng thử lại!");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportSummaryPdf = async () => {
+    if (!classId) {
+      alert("Không tìm thấy lớp để xuất tổng kết!");
+      return;
+    }
+    if (!selectedTerm) {
+      alert("Vui lòng chọn một kỳ học để xuất tổng kết!");
+      return;
+    }
+
+    setExportSummaryLoading(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:4002/api/students/export/pdf/total`,
+        {
+          params: { classId: classId, semesterId: selectedTerm },
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "class-summary.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Lỗi khi xuất tổng kết PDF:", err);
+      alert("Không thể xuất bảng tổng kết. Vui lòng thử lại!");
+    } finally {
+      setExportSummaryLoading(false);
+    }
+  };
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -343,9 +417,32 @@ const StudentScoresList = () => {
           <FaFilter className="absolute left-3 top-3 text-gray-400" />
         </div>
 
-        <button className="px-4 rounded-md cursor-pointer bg-blue-600 hover:bg-blue-700 ">
-          <RiExportFill className="text-white" />
-        </button>
+        {role === "advisor" && (
+          <div className="flex gap-4">
+            <button
+              className={`px-4 py-2 rounded-md cursor-pointer flex items-center gap-2 ${
+                exportLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } text-white`}
+              onClick={handleExportPdf}
+              disabled={exportLoading}
+            >
+              <RiExportFill />
+              {exportLoading ? "Đang xuất..." : "Xuất PDF Chi tiết"}
+            </button>
+            <button
+              className={`px-4 py-2 rounded-md cursor-pointer flex items-center gap-2 ${
+                exportSummaryLoading
+                  ? "bg-blue-400"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } text-white`}
+              onClick={handleExportSummaryPdf}
+              disabled={exportSummaryLoading}
+            >
+              <RiExportFill />
+              {exportSummaryLoading ? "Đang xuất..." : "Xuất PDF Tổng kết"}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg shadow">

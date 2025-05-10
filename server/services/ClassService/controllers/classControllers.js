@@ -203,13 +203,21 @@ exports.addClass = async (req, res) => {
 
     // Tự động gán class_name dựa theo class_id
     let class_name = "Không rõ";
+    let graduation_year = null;
+    const currentYear = new Date().getFullYear();
+
     if (class_id.includes("12")) {
       class_name = "Khối 12";
+      graduation_year = currentYear + 1;
     } else if (class_id.includes("11")) {
       class_name = "Khối 11";
+      graduation_year = currentYear + 2;
     } else if (class_id.includes("10")) {
       class_name = "Khối 10";
+      graduation_year = currentYear + 3;
     }
+
+    const is_graduated = graduation_year !== null && currentYear >= graduation_year;
 
     // Kiểm tra trùng lặp class_id
     const existing = await Class.findOne({ class_id });
@@ -220,6 +228,8 @@ exports.addClass = async (req, res) => {
     const newClass = new Class({
       class_id,
       class_name,
+      graduation_year,
+      is_graduated,
     });
 
     await newClass.save();
@@ -866,5 +876,49 @@ exports.getAllClasses = async (req, res) => {
     res.json(classes);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+function getStudiedSchoolYears(classDoc) {
+  const graduationYear = classDoc.graduation_year;
+  const startYear = graduationYear - 3;
+  const currentYear = new Date().getFullYear();
+
+  const studiedYears = [];
+
+  for (let year = startYear; year < graduationYear; year++) {
+    if (year < currentYear || (year === currentYear && new Date() > new Date(`${year}-06-01`))) {
+      studiedYears.push(`${year}-${year + 1}`);
+    }
+  }
+
+  return studiedYears;
+}
+
+exports.getAvailableSemestersForClass = async (req, res) => {
+  try {
+    const { class_id } = req.params;
+
+    const classDoc = await Class.findOne({ class_id });
+
+    if (!classDoc) {
+      return res.status(404).json({ message: "Không tìm thấy lớp" });
+    }
+
+    const studiedYears = getStudiedSchoolYears(classDoc);
+
+    const semesterResponse = await axios.post(`http://localhost:4001/api/semesters/by-years`, {
+      years: studiedYears
+    });
+
+    return res.status(200).json({
+      class_id: classDoc.class_id,
+      graduation_year: classDoc.graduation_year,
+      studied_years: studiedYears,
+      semesters: semesterResponse.data.semesters
+    });
+  } catch (error) {
+    console.error("Lỗi khi gọi semester-service:", error.message);
+    return res.status(500).json({ message: "Lỗi khi lấy học kỳ từ semester-service" });
   }
 };
