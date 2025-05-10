@@ -20,5 +20,7 @@ router.get("/", userController.getAllStudents);
 router.delete("/full-delete/:id",  authenticateToken, authorizeRoles("admin"),  userController.fullDeleteStudent);
 router.put('/:id/add-homeroom-teacher', userController.addHomeroomTeacher);
 router.put('/:id/remove-homeroom-teacher', userController.removeHomeroomTeacher);
+router.post('/graduated', userController.graduated);
+router.post('/:id/repeat', userController.addRepeatYear);
 
 module.exports = router;

@@ -4,8 +4,8 @@ const classController = require("../controllers/classControllers");
 const upload = require('../middlewares/upload');
 const { authenticateToken, authorizeRoles } = require("../../../middleware/auth");
 
+router.get('/classes/:id', classController.getClassById);
 router.get('/classes/khoi', classController.getAllClasses);
-
 router.get('/classes/:id/students', classController.getClassStudents);
 router.get('/teachers/:id/class', classController.getClassesByTeacher);
 router.get('/students/:id/advisor', classController.getAdvisorOfStudent);
@@ -29,5 +29,10 @@ router.put("/classes/add-teacher", classController.addClassForTeacher);
 router.put("/classes/remove-teacher", classController.removeTeacherFromClass);
 router.get('/classes/:classId/subjects', classController.getSubjectsOfClass);
 router.get('/:class_id/available-semesters', classController.getAvailableSemestersForClass);
+router.post('/classes/promote', classController.promoteClasses);
+router.post('/classes/graduate-12', classController.graduate12thStudents);
+router.post("/approvals/submit", classController.approval);
+router.get("/approvals/pending", classController.getApprovalPending);
+router.patch("/approvals/:id/approve", classController.approveApproval);
 
 module.exports = router;

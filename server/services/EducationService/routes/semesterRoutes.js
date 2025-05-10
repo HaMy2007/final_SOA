@@ -4,6 +4,9 @@ const semesterController = require("../controllers/semesterControllers");
 const upload = require('../middlewares/upload');
 const { authenticateToken, authorizeRoles } = require("../../../middleware/auth");
 
+router.get('/school-years', semesterController.getSchoolYear);
+router.get('/semester-by-schoolyear', semesterController.getSemesterBySchoolYear);
+
 router.get('/current', semesterController.getCurrentSemester);
 router.get('/:id', semesterController.getSemesterById);
 router.get('/', semesterController.getAllSemesters);

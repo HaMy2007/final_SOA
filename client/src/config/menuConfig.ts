@@ -118,4 +118,16 @@ export const menuItems: MenuItem[] = [
     icon: GrSchedule,
     allowedRoles: ["advisor"],
   },
+  {
+    path: "teacherdashboard",
+    label: "Xét duyệt",
+    icon: GrSchedule,
+    allowedRoles: ["advisor"],
+  },
+  {
+    path: "admindashboard",
+    label: "Tổng quan",
+    icon: RxDashboard,
+    allowedRoles: ["admin"],
+  },
 ];

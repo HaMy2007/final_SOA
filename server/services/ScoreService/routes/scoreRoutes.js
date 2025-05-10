@@ -14,5 +14,9 @@ router.get('/export/pdf/total', scoreController.exportClassSummaryPdf);
 router.get('/export/pdf/subject', scoreController.exportSubjectScoresPdf);
 router.post('/send-report-card/:class_id', scoreController.sendReportCardsToClassParents);
 router.get('/send-email', scoreController.sendEmail);
+router.post('/import-behavior', upload.single('file'), scoreController.importBehavior);
+router.post('/promote-review', scoreController.reviewPromotion);
+router.get('/:studentId/latest', scoreController.getLatestScoreboardByStudent);
+router.get('/status-behavior', scoreController.getStatusAndBehavior);
 
 module.exports = router;
