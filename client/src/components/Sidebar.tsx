@@ -32,12 +32,14 @@ const Sidebar = () => {
       if (item.path === "studentScore") return false;
       if (item.path === "dashboard") return false;
       if (item.path === "students") return false;
+      if (item.path === "forum") return false;
     } else {
     }
 
     if (isHomeroomTeacher) {
       if (item.path === "dashboard") return true;
       if (item.path === "students") return true;
+      if (item.path === "forum") return true;
     } else {
     }
 
