@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { FaInfoCircle, FaSearch } from "react-icons/fa";
+import { RiExportFill } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 
 const ClassManagementForSubjectTeacher = () => {
@@ -14,6 +15,9 @@ const ClassManagementForSubjectTeacher = () => {
   const [filteredStudents, setFilteredStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [semesters, setSemesters] = useState<any[]>([]);
+  const [selectedSemester, setSelectedSemester] = useState<string>("");
 
   useEffect(() => {
     const fetchTeacherClasses = async () => {
@@ -37,10 +41,48 @@ const ClassManagementForSubjectTeacher = () => {
     }
   }, [user?.tdt_id]);
 
+  const fetchSemesters = async (classId: string) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:4000/api/${classId}/available-semesters`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const newSemesters = res.data.semesters || [];
+      setSemesters(newSemesters);
+
+      if (newSemesters.length > 0 && !selectedSemester) {
+        setSelectedSemester(newSemesters[0]._id);
+      } else if (newSemesters.length > 0 && selectedSemester) {
+        const isValidSemester = newSemesters.some(
+          (sem: any) => sem._id === selectedSemester
+        );
+        if (!isValidSemester) {
+          setSelectedSemester(newSemesters[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách kỳ học:", err);
+      setSemesters([]);
+      setSelectedSemester("");
+    }
+  };
+
   const fetchStudentsByClass = async (classId: string) => {
     try {
       setSelectedClass(classId);
-      // localStorage.setItem("classId", classId);
+      setSelectedSemester("");
+      setSemesters([]);
+
+      if (!classId) {
+        setStudents([]);
+        setFilteredStudents([]);
+        return;
+      }
+
+      await fetchSemesters(classId);
+      
       const classRes = await axios.get(
         `http://localhost:4000/api/classes/${classId}/students`,
         {
@@ -93,6 +135,49 @@ const ClassManagementForSubjectTeacher = () => {
       setFilteredStudents(enrichedStudents);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách học sinh:", err);
+      setStudents([]);
+      setFilteredStudents([]);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!selectedClass) {
+      alert("Vui lòng chọn một lớp để xuất điểm!");
+      return;
+    }
+    if (!selectedSemester) {
+      alert("Vui lòng chọn một kỳ học để xuất điểm!");
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:4002/api/students/export/pdf/subject`,
+        {
+          params: {
+            classId: selectedClass,
+            semesterId: selectedSemester,
+            teacherId: user.tdt_id,
+          },
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `subject-score.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Lỗi khi xuất PDF:", err);
+      alert("Không thể xuất bảng điểm. Vui lòng thử lại!");
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -144,6 +229,42 @@ const ClassManagementForSubjectTeacher = () => {
             <FaSearch className="absolute left-3 top-3 text-gray-400" />
           </div>
         )}
+
+        {selectedClass && (
+          <select
+            className="px-4 py-2 border rounded-md"
+            value={selectedSemester}
+            onChange={(e) => setSelectedSemester(e.target.value)}
+            disabled={semesters.length === 0}
+          >
+            {semesters.length === 0 ? (
+              <option value="">Chưa có kỳ học</option>
+            ) : (
+              <>
+                <option value="">Chọn kỳ học</option>
+                {semesters.map((sem) => (
+                  <option key={sem._id} value={sem._id}>
+                    {sem.semester_name}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+        )}
+
+        {selectedClass && (
+          <button
+            className={`px-4 py-2 rounded-md cursor-pointer flex items-center gap-2 ${
+              exportLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            } text-white`}
+            onClick={handleExportPdf}
+            disabled={exportLoading}
+          >
+            <RiExportFill />
+            {exportLoading ? "Đang xuất..." : "Xuất PDF"}
+          </button>
+        )}
+        
       </div>
 
       {selectedClass && (

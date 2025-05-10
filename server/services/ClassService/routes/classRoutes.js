@@ -28,5 +28,6 @@ router.put("/classes/:classId/change-advisor", authenticateToken, authorizeRoles
 router.put("/classes/add-teacher", classController.addClassForTeacher);
 router.put("/classes/remove-teacher", classController.removeTeacherFromClass);
 router.get('/classes/:classId/subjects', classController.getSubjectsOfClass);
+router.get('/:class_id/available-semesters', classController.getAvailableSemestersForClass);
 
 module.exports = router;

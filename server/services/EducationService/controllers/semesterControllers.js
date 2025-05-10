@@ -115,3 +115,34 @@ exports.importSemesters = async (req, res) => {
       res.status(500).json({ message: "Lỗi server" });
     }
   };
+
+exports.getSemestersByYears = async (req, res) => {
+  try {
+    const { years } = req.body; 
+
+    if (!Array.isArray(years) || years.length === 0) {
+      return res.status(400).json({ message: "Danh sách năm học không hợp lệ" });
+    }
+
+    const allSemesters = await Semester.find().sort({ start_date: 1 });
+
+    const matchedSemesters = allSemesters.filter((sem) => {
+      if (!sem.semester_code || sem.semester_code.length < 5) return false;
+
+      const yearStart = `20${sem.semester_code.slice(0, 2)}`; // "24" → "2024"
+      const yearEnd = `20${sem.semester_code.slice(2, 4)}`;   // "25" → "2025"
+      const yearRange = `${yearStart}-${yearEnd}`;
+
+      return years.includes(yearRange);
+    });
+
+    if (matchedSemesters.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy học kỳ phù hợp với năm học" });
+    }
+
+    res.status(200).json({ semesters: matchedSemesters });
+  } catch (error) {
+    console.error("Lỗi khi lấy học kỳ theo năm học:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

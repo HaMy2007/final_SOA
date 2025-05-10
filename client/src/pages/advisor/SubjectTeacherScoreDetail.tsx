@@ -26,37 +26,52 @@ const SubjectTeacherScoreDetail = () => {
         );
         setStudentInfo(userRes.data);
 
-        const scoreGroupedRes = await axios.get(
-          `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
+        const semesterRes = await axios.get(
+          `http://localhost:4000/api/${classId}/available-semesters`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        const grouped = scoreGroupedRes.data as Record<
-          string,
-          { name: string }
-        >;
-        const formatted = Object.entries(grouped).map(([id, { name }]) => ({
-          id,
-          name,
+        const formattedSemesters = semesterRes.data.semesters.map((sem: any) => ({
+          id: sem._id,
+          name: sem.semester_name,
         }));
-        setSemesters(formatted);
-        if (formatted.length > 0) {
-          setSelectedSemesterId(formatted[0].id);
-        }
+        setSemesters(formattedSemesters);
+
+        // const scoreGroupedRes = await axios.get(
+        //   `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
+        //   {
+        //     headers: { Authorization: `Bearer ${token}` },
+        //   }
+        // );
+
+        // const grouped = scoreGroupedRes.data as Record<
+        //   string,
+        //   { name: string }
+        // >;
+        // const formatted = Object.entries(grouped).map(([id, { name }]) => ({
+        //   id,
+        //   name,
+        // }));
+        // setSemesters(formatted);
+        // if (formatted.length > 0) {
+        //   setSelectedSemesterId(formatted[0].id);
+        // }
       } catch (err) {
         console.error("Lỗi khi tải thông tin:", err);
       }
     };
 
     fetchData();
-  }, [studentId, token]);
+  }, [classId, studentId, token]);
 
   useEffect(() => {
     const fetchScores = async () => {
       if (!studentInfo || !selectedSemesterId) return;
       setLoading(true);
+      setGrades([]);
+
       try {
         const res = await axios.get(
           `http://localhost:4002/api/students/scores/${studentInfo._id}/by-teacher/${teacherId}?semester_id=${selectedSemesterId}`,
@@ -91,7 +106,7 @@ const SubjectTeacherScoreDetail = () => {
     };
 
     fetchScores();
-  }, [studentInfo, selectedSemesterId, teacherId]);
+  }, [studentInfo, selectedSemesterId, teacherId, token]);
 
   const handleEditScore = async () => {
     const scores: Record<string, number> = {};
@@ -126,7 +141,6 @@ const SubjectTeacherScoreDetail = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      // setGrades(res.data.scores);
       const subject = res.data.subject || [res.data.subject];
 
         if (subject) {

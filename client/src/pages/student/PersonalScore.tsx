@@ -15,40 +15,43 @@ const PersonalScore = () => {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    const fetchUserAndSemesters = async () => {
+    const fetchAll = async () => {
       try {
+        // Lấy thông tin user từ tdt_id
         const userRes = await axios.get(
           `http://localhost:4003/api/users/tdt/${tdt_id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        setUserDetail(userRes.data);
-
-        const scoreGroupedRes = await axios.get(
-          `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        const userData = userRes.data;
+        setUserDetail(userData);
 
-        const groupedData = scoreGroupedRes.data as Record<
-          string,
-          { name: string }
-        >;
-        const formatted = Object.entries(groupedData).map(([id, { name }]) => ({
-          id,
-          name,
+        // Lấy lớp học
+        const classRes = await axios.get(
+          `http://localhost:4000/api/students/${userData._id}/class`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const classId = classRes.data.class.class_id;
+
+        // Lấy danh sách kỳ học đã học theo class
+        const semesterRes = await axios.get(
+          `http://localhost:4000/api/${classId}/available-semesters`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const semesterList = semesterRes.data.semesters.map((s: any) => ({
+          id: s._id,
+          semester_name: s.semester_name,
         }));
 
-        setSemesters(formatted);
-        if (formatted.length > 0) {
-          setSelectedSemesterId(formatted[0].id);
+        setSemesters(semesterList);
+        if (semesterList.length > 0) {
+          setSelectedSemesterId(semesterList[0].id);
         }
       } catch (err) {
-        console.error("Lỗi khi tải thông tin user hoặc học kỳ:", err);
+        console.error("Lỗi khi tải dữ liệu ban đầu:", err);
       }
     };
 
-    fetchUserAndSemesters();
+    fetchAll();
   }, [tdt_id, token]);
 
   // Lấy điểm theo kỳ
@@ -56,6 +59,10 @@ const PersonalScore = () => {
     const fetchScores = async () => {
       if (!userDetail) return;
       setLoading(true);
+      setGrades([]);
+      setGpa(0);
+      setStatus("");
+
       try {
         const query =
           selectedSemesterId !== "all"
@@ -124,7 +131,7 @@ const PersonalScore = () => {
                     >
                       {semesters.map((semester) => (
                         <option key={semester.id} value={semester.id}>
-                          {semester.name}
+                          {semester.semester_name}
                         </option>
                       ))}
                     </select>
@@ -133,7 +140,15 @@ const PersonalScore = () => {
               </tr>
             </thead>
             <tbody>
-              {grades.map((grade, index) => (
+              {grades.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-4 text-center text-gray-500 italic">
+                  Kỳ học này chưa có điểm.
+                </td>
+              </tr>
+            ) : (
+              <>
+              {grades.map((grade, index) => ( 
                 <tr key={index} className="border-t text-sm">
                   <td className="p-3">{grade.subject_name}</td>
                   <td className="p-3">{grade.subject_code}</td>
@@ -160,6 +175,8 @@ const PersonalScore = () => {
                 <td className="p-3 text-center">{gpa.toFixed(2)}</td>
                 <td className="p-3"></td>
               </tr>
+               </>
+              )}
             </tbody>
           </table>
         </div>

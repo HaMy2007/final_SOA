@@ -13,6 +13,7 @@ const StudentScoreDetail = () => {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
   const [editingSubject, setEditingSubject] = useState<any>(null);
+  const [classId, setClassId] = useState<string>("");
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -23,7 +24,17 @@ const StudentScoreDetail = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+        const stid = userRes.data._id;
+
+        const classRes = await axios.get(
+          `http://localhost:4000/api/students/${stid}/class`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const classId = classRes.data.class.class_id;
         setStudentInfo(userRes.data);
+        setClassId(classId);
 
         const scoreGroupedRes = await axios.get(
           `http://localhost:4002/api/students/${userRes.data._id}/scores-by-semester`,
@@ -32,18 +43,33 @@ const StudentScoreDetail = () => {
           }
         );
 
-        const grouped = scoreGroupedRes.data as Record<
-          string,
-          { name: string }
-        >;
-        const formatted = Object.entries(grouped).map(([id, { name }]) => ({
-          id,
-          name,
+        const semesterRes = await axios.get(
+          `http://localhost:4000/api/${classId}/available-semesters`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const formattedSemesters = semesterRes.data.semesters.map((sem: any) => ({
+          id: sem._id,
+          name: sem.semester_name,
         }));
-        setSemesters(formatted);
-        if (formatted.length > 0) {
-          setSelectedSemesterId(formatted[0].id);
+        setSemesters(formattedSemesters);
+
+        if (formattedSemesters.length > 0) {
+          setSelectedSemesterId(formattedSemesters[0].id);
         }
+        // const grouped = scoreGroupedRes.data as Record<
+        //   string,
+        //   { name: string }
+        // >;
+        // const formatted = Object.entries(grouped).map(([id, { name }]) => ({
+        //   id,
+        //   name,
+        // }));
+        // setSemesters(formatted);
+        // if (formatted.length > 0) {
+        //   setSelectedSemesterId(formatted[0].id);
+        // }
       } catch (err) {
         console.error("Lỗi khi tải thông tin học sinh hoặc học kỳ:", err);
       }
@@ -56,6 +82,9 @@ const StudentScoreDetail = () => {
     const fetchScores = async () => {
       if (!studentInfo || !selectedSemesterId) return;
       setLoading(true);
+      setGrades([]);
+      setGpa(0);
+      setStatus("");
       try {
         const res = await axios.get(
           `http://localhost:4002/api/students/${studentInfo._id}/scores?semester_id=${selectedSemesterId}`,

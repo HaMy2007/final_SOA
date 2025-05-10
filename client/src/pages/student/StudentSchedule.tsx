@@ -55,12 +55,18 @@ const StudentSchedule = () => {
   useEffect(() => {
     const fetchSemesters = async () => {
       try {
-        const res = await axios.get("http://localhost:4001/api/semesters", {
+        const classRes = await axios.get(`http://localhost:4000/api/students/${user._id}/class`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setSemesters(res.data);
-        if (res.data.length > 0) {
-          setSelectedSemester(res.data[0]._id);
+        const className = classRes.data.class.class_id;
+
+        const res = await axios.get(`http://localhost:4000/api/${className}/available-semesters`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSemesters(res.data.semesters);
+        
+        if (res.data.semesters.length > 0) {
+          setSelectedSemester(res.data.semesters[0]._id);
         }
       } catch (err) {
         console.error("Lỗi khi lấy danh sách kỳ học:", err);
