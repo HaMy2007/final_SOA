@@ -59,7 +59,7 @@ export const menuItems: MenuItem[] = [
     path: "schedule",
     label: "Thời khóa biểu",
     icon: GrSchedule,
-    allowedRoles: ["advisor", "admin", "student"],
+    allowedRoles: ["admin"],
   },
 
   {
@@ -80,6 +80,12 @@ export const menuItems: MenuItem[] = [
     path: "personalScore",
     label: "Điểm cá nhân",
     icon: GrScorecard,
+    allowedRoles: ["student"],
+  },
+  {
+    path: "studentSchedule",
+    label: "Thời khóa biểu",
+    icon: GrSchedule,
     allowedRoles: ["student"],
   },
   {
@@ -105,5 +111,11 @@ export const menuItems: MenuItem[] = [
     label: "Quản lý lớp học",
     icon: MdForum,
     allowedRoles: ["admin"],
+  },
+  {
+    path: "schedule",
+    label: "Thời khóa biểu",
+    icon: GrSchedule,
+    allowedRoles: ["advisor"],
   },
 ];
