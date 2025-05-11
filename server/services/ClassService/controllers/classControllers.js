@@ -1356,14 +1356,6 @@ function extractGradeAndSuffix(classId) {
   console.log(`[ClassService] Extracted:`, result);
   return result;
 }
-// function extractGradeAndSuffix(classId) {
-//   const match = classId.match(/^(\d+)([A-Za-z]*)$/);
-//   if (!match) return null;
-//   return {
-//     grade: parseInt(match[1], 10),
-//     suffix: match[2] || ""
-//   };
-// }
 
 // exports.approval = async (req, res) => {
 //   try {
