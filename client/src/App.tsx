@@ -2,21 +2,21 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import NewPassword from "./components/NewPassword";
 import PrivateRoute from "./components/PrivateRoute";
+import TeacherDashboard from "./components/TeacherDashboard.tsx";
 import { AdvisorInfoProvider } from "./context/AdvisorInfoContext";
 import { StudentInfoProvider } from "./context/StudentInfoContext";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdvisorInfor from "./pages/admin/AdvisorInfo";
 import ClassDetail from "./pages/admin/ClassDetail";
 import ClassManagement from "./pages/admin/ClassManagement";
 import DepartmentDetail from "./pages/admin/DepartmentDetail";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
 import TeacherDetailInDepartment from "./pages/admin/TeacherDetailInDepartment";
-import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import ClassManagementForSubjectTeacher from "./pages/advisor/ClassManagementForSubjectTeacher";
 import Dashboard from "./pages/advisor/Dashboard";
-import TeacherSchedule from "./pages/advisor/TeacherSchedule.tsx";
 import SubjectTeacherScoreDetail from "./pages/advisor/SubjectTeacherScoreDetail";
+import TeacherSchedule from "./pages/advisor/TeacherSchedule.tsx";
 import ChangePassword from "./pages/ChangePassword";
-import TeacherDashboard from "./components/TeacherDashboard.tsx";
 import DatabaseManagement from "./pages/DatabaseManagement";
 import Forum from "./pages/Forum";
 import Home from "./pages/Home";
@@ -109,6 +109,7 @@ const App = () => {
           <Route path="profile" element={<Profile />} />
           <Route path="schedule" element={<TeacherSchedule />} />
           <Route path="dashboard" element={<Dashboard />} />
+
           <Route path="teacherdashboard" element={<TeacherDashboard />} />
           {/* <Route path="dashboard" element={<Dashboard />} /> */}
           <Route

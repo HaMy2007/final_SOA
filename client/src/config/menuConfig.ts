@@ -9,6 +9,7 @@ import {
 } from "react-icons/md";
 
 import React from "react";
+import { FcAcceptDatabase } from "react-icons/fc";
 import { IoMdInformationCircle } from "react-icons/io";
 import { RxDashboard } from "react-icons/rx";
 import { SiInformatica } from "react-icons/si";
@@ -126,8 +127,8 @@ export const menuItems: MenuItem[] = [
   },
   {
     path: "admindashboard",
-    label: "Tổng quan",
-    icon: RxDashboard,
+    label: "Xét duyệt",
+    icon: FcAcceptDatabase,
     allowedRoles: ["admin"],
   },
 ];

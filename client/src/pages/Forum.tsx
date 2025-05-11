@@ -7,6 +7,8 @@ import { PostType } from "../types/post";
 const Forum = () => {
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userRole = Array.isArray(user.role) ? user.role[0] : user.role;
 
   const [posts, setPosts] = useState<PostType[]>([]);
   const [newPost, setNewPost] = useState("");
@@ -157,20 +159,22 @@ const Forum = () => {
       <div className="w-full h-full overflow-y-auto">
         <h1 className="text-2xl font-bold mb-4 ">Diễn đàn</h1>
 
-        <div className="mb-6 ">
-          <textarea
-            placeholder="Chia sẻ điều gì đó..."
-            className="w-full p-3 border rounded mb-2 bg-white"
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-          />
-          <button
-            onClick={handlePost}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
-          >
-            Đăng bài
-          </button>
-        </div>
+        {userRole === "advisor" ? (
+          <div className="mb-6 ">
+            <textarea
+              placeholder="Chia sẻ điều gì đó..."
+              className="w-full p-3 border rounded mb-2 bg-white"
+              value={newPost}
+              onChange={(e) => setNewPost(e.target.value)}
+            />
+            <button
+              onClick={handlePost}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+            >
+              Đăng bài
+            </button>
+          </div>
+        ) : null}
 
         {posts.map((post) => (
           <div

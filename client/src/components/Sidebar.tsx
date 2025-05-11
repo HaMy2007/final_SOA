@@ -33,6 +33,7 @@ const Sidebar = () => {
       if (item.path === "dashboard") return false;
       if (item.path === "students") return false;
       if (item.path === "forum") return false;
+      if (item.path === "teacherdashboard") return false;
     } else {
     }
 
@@ -40,6 +41,7 @@ const Sidebar = () => {
       if (item.path === "dashboard") return true;
       if (item.path === "students") return true;
       if (item.path === "forum") return true;
+      if (item.path === "teacherdashboard") return true;
     } else {
     }
 

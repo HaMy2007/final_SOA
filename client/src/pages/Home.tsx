@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { CiLogout } from "react-icons/ci";
 import { FaUser } from "react-icons/fa";
+import { FcAcceptDatabase } from "react-icons/fc";
 import { GrSchedule, GrScorecard } from "react-icons/gr";
 import { ImProfile } from "react-icons/im";
 import { IoMdInformationCircle } from "react-icons/io";
@@ -332,6 +333,14 @@ const Home = () => {
                 <GrSchedule className="w-12 h-12 text-amber-600" />
                 <span className="ml-2 text-xl">Thời khóa biểu</span>
               </Link>
+
+              <Link
+                to={`/${role}/admindashboard`}
+                className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+              >
+                <FcAcceptDatabase className="w-12 h-12 text-blue-900" />
+                <span className="ml-2 text-xl">Xét duyệt</span>
+              </Link>
               {/* <button
                 onClick={handleLogout}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex items-center flex-col w-full"
@@ -455,6 +464,7 @@ const Home = () => {
                 <MdOutlineClass className="w-12 h-12 text-red-400" />
                 <span className="ml-2 text-xl">Lớp học</span>
               </Link>
+
               {/* <button
                 onClick={handleLogout}
                 className="col-span-4 bg-white p-4 rounded-lg shadow-md flex items-center flex-col w-full"
