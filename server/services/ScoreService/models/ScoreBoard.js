@@ -15,7 +15,11 @@ const ScoreboardSchema = new Schema(
                 ],
                 subjectGPA: { type: Number, default: 0 }
             }
-        ]
+        ],
+        behavior: {
+            type: String,
+            enum: ['Tốt', 'Khá', 'Trung bình', 'Yếu'],
+        }
     },
     {
         timestamps: true

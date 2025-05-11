@@ -698,3 +698,45 @@ exports.removeHomeroomTeacher = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+exports.graduated = async (req, res) => {
+  try {
+    const { student_ids, graduation_year } = req.body;
+
+    await User.updateMany(
+      { _id: { $in: student_ids }, role: 'student' },
+      {
+        $set: {
+          status: 'graduated',
+          graduation_year: graduation_year
+        }
+      }
+    );
+
+    res.json({ message: 'Students updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update students' });
+  }
+};
+
+exports.addRepeatYear = async (req, res) => {
+  const { grade, school_year } = req.body;
+
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user || user.role !== "student") {
+      return res.status(404).json({ message: "Không tìm thấy học sinh" });
+    }
+
+    user.repeat_years.push({ grade, school_year });
+    await user.save();
+
+    return res.status(200).json({ message: "Ghi nhận lưu ban thành công" });
+
+  } catch (err) {
+    console.error("Lỗi ghi nhận lưu ban:", err.message);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};

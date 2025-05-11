@@ -146,3 +146,52 @@ exports.getSemestersByYears = async (req, res) => {
     res.status(500).json({ message: "Lỗi server" });
   }
 };
+
+// exports.getSemestersBySchoolYear = async (req, res) => {
+//   try {
+//     const { school_year } = req.query;
+
+//     // Validate school_year
+//     if (!school_year || !/^\d{4}-\d{4}$/.test(school_year)) {
+//       return res.status(400).json({ message: 'school_year phải có định dạng YYYY-YYYY' });
+//     }
+
+//     // Query semesters by semester_name
+//     const semesters = await Semester.find({
+//       semester_name: { $regex: school_year, $options: 'i' }
+//     }).select('_id semester_name semester_code start_date end_date');
+
+//     res.status(200).json(semesters);
+//   } catch (err) {
+//     console.error('[EducationService LỖI] Lỗi lấy semesters:', {
+//       message: err.message,
+//       stack: err.stack
+//     });
+//     res.status(500).json({ message: 'Lỗi server', error: err.message });
+//   }
+// };
+
+exports.getSchoolYear = async (req, res) => {
+  try {
+    const schoolYears = await Semester.distinct("school_year").sort({ school_year: -1 });
+    if (!schoolYears || schoolYears.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy năm học nào." });
+    }
+    res.status(200).json(schoolYears);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách năm học:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getSemesterBySchoolYear = async (req, res) => {
+  try {
+    const { school_year } = req.query;
+    const query = school_year ? { school_year } : {};
+    const semesters = await Semester.find(query);
+    res.status(200).json(semesters);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách kỳ học:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

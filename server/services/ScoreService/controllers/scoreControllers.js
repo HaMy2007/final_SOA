@@ -1140,3 +1140,290 @@ exports.sendEmail = async (req, res) => {
     res.status(500).send("Lỗi khi lên lịch gửi bảng điểm.");
   }
 };
+
+exports.importBehavior = async (req, res) => {
+    const file = req.file;
+    const semesterId = req.body.semester_id;
+
+    if (!file || !semesterId) {
+      return res.status(400).json({ message: 'Thiếu file hoặc semester_id' });
+    }
+
+    const results = [];
+
+    fs.createReadStream(file.path)
+      .pipe(csv())
+      .on('data', (row) => {
+        results.push(row);
+      })
+      .on('end', async () => {
+        let success = 0;
+        let failed = 0;
+
+        for (const row of results) {
+          const { tdt_id, behavior } = row;
+
+          if (!tdt_id || !behavior) {
+            failed++;
+            continue;
+          }
+
+          try {
+            // Gọi sang user-service để lấy user theo tdt_id
+            const response = await axios.get(`http://localhost:4003/api/users/tdt/${tdt_id}`);
+            const user = response.data;
+
+            // Tìm scoreboard tương ứng
+            const scoreboard = await Scoreboard.findOne({
+              user_id: user._id,
+              semester_id: semesterId,
+            });
+
+            if (!scoreboard) {
+              failed++;
+              continue;
+            }
+
+            // Cập nhật behavior
+            scoreboard.behavior = behavior;
+            await scoreboard.save();
+            success++;
+          } catch (error) {
+            console.error(`Lỗi khi xử lý tdt_id ${tdt_id}:`, error.message);
+            failed++;
+          }
+        }
+
+        fs.unlinkSync(file.path); // Xoá file sau khi xử lý
+
+        return res.status(200).json({
+          message: 'Import hành kiểm hoàn tất',
+          success,
+          failed,
+        });
+      });
+};
+
+// exports.reviewPromotion = async (req, res) => {
+//   const { class_id, semester_id, school_year } = req.body;
+
+//   if (!class_id || !semester_id || !school_year) {
+//     return res.status(400).json({ message: 'Thiếu class_id, semester_id hoặc school_year' });
+//   }
+
+//   try {
+//     // Gọi sang class-service để lấy thông tin lớp
+//     const classRes = await axios.get(`http://localhost:4000/api/classes/${class_id}`);
+//     const classData = classRes.data;
+
+//     const classMembers = classData.class_member;
+//     const classIdStr = classData.class_id;
+
+//     const result = {
+//       promoted: [],
+//       repeated: [],
+//     };
+
+//     for (const studentId of classMembers) {
+//       const scoreboard = await Scoreboard.findOne({
+//         user_id: studentId,
+//         semester_id
+//       });
+
+//       if (!scoreboard) continue;
+
+//       const gpa = scoreboard.gpa || 0;
+//       const behavior = scoreboard.behavior || 'Trung bình';
+
+//       const isRepeat = behavior === 'Yếu' || gpa < 5.0;
+
+//       if (isRepeat) {
+//         result.repeated.push({ student_id: studentId, gpa, behavior });
+
+//         // Gọi user-service để ghi nhận học sinh lưu ban
+//         await axios.post(`http://localhost:4003/api/users/${studentId}/repeat`, {
+//           grade: classIdStr.slice(0, 2),
+//           school_year,
+//         });
+//       } else {
+//         result.promoted.push({ student_id: studentId, gpa, behavior });
+//       }
+//     }
+
+//     return res.status(200).json({
+//       message: "Xét duyệt lên lớp thành công",
+//       class_id, semester_id, school_year,
+//       ...result
+//     });
+
+//   } catch (err) {
+//     console.error("Lỗi xét duyệt lên lớp:", err.message);
+//     return res.status(500).json({ message: "Lỗi server" });
+//   }
+// };
+
+exports.reviewPromotion = async (req, res) => {
+  const { class_id, school_year } = req.body;
+
+  // Validate inputs
+  if (!class_id || !school_year) {
+    return res.status(400).json({ message: 'Thiếu class_id hoặc school_year' });
+  }
+
+  if (!/^\d{4}-\d{4}$/.test(school_year)) {
+    return res.status(400).json({ message: 'school_year phải có định dạng YYYY-YYYY' });
+  }
+
+  try {
+    // Fetch semesters from separate service
+    const semesterRes = await axios.get(`http://localhost:4001/api/semesters/semester?school_year=${school_year}`);
+    const semesters = semesterRes.data;
+
+    if (semesters.length !== 2) {
+      return res.status(400).json({
+        message: `Cần đúng 2 kỳ học cho năm học ${school_year}, tìm thấy ${semesters.length} kỳ`
+      });
+    }
+
+    const semesterIds = semesters.map(sem => sem._id);
+
+    // Fetch class data
+    const classRes = await axios.get(`http://localhost:4000/api/classes/${class_id}`);
+    const classData = classRes.data;
+
+    const classMembers = classData.class_member;
+    const classIdStr = classData.class_id;
+
+    const result = { promoted: [], repeated: [] };
+
+    for (const studentId of classMembers) {
+      // Validate studentId
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        console.warn(`Invalid student_id: ${studentId}`);
+        continue;
+      }
+
+      // Fetch scoreboards for both semesters
+      const scoreboards = await Scoreboard.find({
+        user_id: studentId,
+        semester_id: { $in: semesterIds }
+      });
+
+      // Check if student has scoreboards for both semesters
+      if (scoreboards.length !== 2) {
+        result.repeated.push({
+          student_id: studentId,
+          gpa: 0,
+          behavior: 'N/A',
+          reason: `Thiếu bảng điểm cho ${2 - scoreboards.length} kỳ`
+        });
+        await axios.post(`http://localhost:4003/api/users/${studentId}/repeat`, {
+          grade: classIdStr.slice(0, 2),
+          school_year
+        });
+        continue;
+      }
+
+      // Check GPA and behavior for both semesters
+      let isEligible = true;
+      let studentGpa = Infinity;
+      let studentBehavior = 'Tốt';
+
+      for (const scoreboard of scoreboards) {
+        const gpa = scoreboard.gpa || 0;
+        const behavior = scoreboard.behavior || 'Trung bình';
+
+        if (gpa < 5.0 || behavior === 'Yếu') {
+          isEligible = false;
+        }
+
+        // Track minimum GPA and worst behavior for reporting
+        studentGpa = Math.min(studentGpa, gpa);
+        if (['Yếu', 'Trung bình', 'Khá', 'Tốt'].indexOf(studentBehavior) > ['Yếu', 'Trung bình', 'Khá', 'Tốt'].indexOf(behavior)) {
+          studentBehavior = behavior;
+        }
+      }
+
+      if (isEligible) {
+        result.promoted.push({
+          student_id: studentId,
+          gpa: studentGpa,
+          behavior: studentBehavior
+        });
+      } else {
+        result.repeated.push({
+          student_id: studentId,
+          gpa: studentGpa,
+          behavior: studentBehavior,
+          reason: studentBehavior === 'Yếu' ? 'Hạnh kiểm Yếu ở ít nhất một kỳ' : 'GPA dưới 5.0 ở ít nhất một kỳ'
+        });
+        await axios.post(`http://localhost:4003/api/users/${studentId}/repeat`, {
+          grade: classIdStr.slice(0, 2),
+          school_year
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: 'Xét duyệt lên lớp thành công',
+      class_id,
+      school_year,
+      ...result
+    });
+  } catch (err) {
+    console.error('Lỗi xét duyệt lên lớp:', err.message);
+    return res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+};
+
+exports.getLatestScoreboardByStudent = async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+
+    const scoreboard = await Scoreboard.findOne({ user_id: studentId })
+      .sort({ createdAt: -1 }) // bảng điểm mới nhất
+      .select('gpa behavior') // chỉ trả về gpa & behavior & semester
+
+    if (!scoreboard) {
+      return res.status(404).json({ message: 'Không tìm thấy bảng điểm' });
+    }
+
+    res.status(200).json(scoreboard);
+
+  } catch (err) {
+    console.error('[ERROR] Lấy bảng điểm mới nhất:', err.message);
+    res.status(500).json({ message: 'Lỗi server khi lấy bảng điểm' });
+  }
+};
+
+
+exports.getStatusAndBehavior = async (req, res) => {
+  try {
+    const { user_id, semester_ids } = req.query;
+
+    if (!user_id || !semester_ids) {
+      return res.status(400).json({ message: "Thiếu user_id hoặc semester_ids" });
+    }
+
+    const semesterIdsArray = semester_ids
+      .split(",")
+      .filter((id) => id.trim() !== ""); // Remove empty entries
+    if (semesterIdsArray.length === 0) {
+      return res.status(400).json({ message: "Danh sách semester_ids không hợp lệ" });
+    }
+
+    const scores = await Scoreboard.find({
+      user_id,
+      semester_id: { $in: semesterIdsArray }
+    }).lean(); // Use lean() for better performance
+
+    if (!scores || scores.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy điểm cho học sinh này" });
+    }
+
+    res.status(200).json(scores);
+  } catch (error) {
+    console.error("Lỗi khi lấy điểm học sinh:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};

@@ -1,4 +1,5 @@
 const Class = require("../models/Class");
+const Approval = require("../models/Approval");
 const mongoose = require("mongoose");
 const axios = require("axios");
 const fs = require("fs");
@@ -920,5 +921,648 @@ exports.getAvailableSemestersForClass = async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi gọi semester-service:", error.message);
     return res.status(500).json({ message: "Lỗi khi lấy học kỳ từ semester-service" });
+  }
+};
+
+exports.getClassById = async (req, res) => {
+  try {
+    const cls = await Class.findById(req.params.id).lean();
+    if (!cls) return res.status(404).json({ message: "Không tìm thấy lớp" });
+    res.json(cls);
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.graduate12thStudents = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    console.log(`⏳ Bắt đầu xét tốt nghiệp cho lớp 12 vào năm ${currentYear}...`);
+
+    // Lấy danh sách các lớp 12 chưa tốt nghiệp
+    const classes12 = await Class.find({
+      class_id: { $regex: /^12/ },
+      is_graduated: false
+    });
+    console.log(`🏫 Tìm thấy ${classes12.length} lớp 12 chưa tốt nghiệp`);
+
+    for (const cls of classes12) {
+      const graduated = [];
+      const notGraduated = [];
+      console.log(`🔍 Đang xử lý lớp ${cls.class_id}...`);
+
+      // Gọi sang ClassService để lấy thông tin học sinh
+      const { data: classData } = await axios.get(
+        `http://localhost:4000/api/classes/${cls.class_id}/students`
+      );
+      console.log(`🧑‍🎓 Lớp ${cls.class_id} có ${classData.students.length} học sinh`);
+
+      const students = classData.students || [];
+
+      for (const student of students) {
+        console.log(`👤 Đang xử lý học sinh: ${student._id}...`);
+
+        // Gọi sang ScoreboardService để lấy bảng điểm gần nhất
+        try {
+          const { data: scoreboard } = await axios.get(
+            `http://localhost:4002/api/students/${student._id}/latest`
+          );
+
+          const gpa = scoreboard?.gpa || 0;
+          const behavior = scoreboard?.behavior || "Yếu";
+          console.log(`📊 Bảng điểm học sinh ${student._id}: GPA = ${gpa}, Hạnh kiểm = ${behavior}`);
+
+          const enoughGPA = gpa >= 5.0;
+          const goodBehavior = behavior !== "Yếu";
+
+          if (enoughGPA && goodBehavior) {
+            graduated.push(student._id);
+            console.log(`✅ Học sinh ${student._id} đủ điều kiện tốt nghiệp`);
+          } else {
+            notGraduated.push(student._id);
+            console.log(`❌ Học sinh ${student._id} không đủ điều kiện tốt nghiệp`);
+          }
+        } catch (error) {
+          // Nếu không tìm thấy bảng điểm (404), học sinh sẽ bị coi là không đủ điều kiện
+          if (error.response && error.response.status === 404) {
+            notGraduated.push(student._id);
+            console.log(`❌ Học sinh ${student._id} chưa có bảng điểm, bị lưu ban`);
+          } else {
+            console.error(`[ERROR] Lỗi khi lấy bảng điểm học sinh ${student._id}: ${error.message}`);
+          }
+        }
+      }
+
+      // Đánh dấu lớp đã tốt nghiệp
+      cls.is_graduated = true;
+      cls.graduation_year = currentYear;
+      await cls.save();
+      console.log(`✅ Lớp ${cls.class_id} đã được đánh dấu tốt nghiệp`);
+
+      // Gọi UserService để cập nhật trạng thái tốt nghiệp
+      if (graduated.length > 0) {
+        await axios.post(`http://localhost:4003/api/users/graduated`, {
+          student_ids: graduated,
+          graduation_year: currentYear
+        });
+        console.log(`📩 Đã cập nhật trạng thái tốt nghiệp cho ${graduated.length} học sinh`);
+      }
+
+      console.log(
+        `✅ ${cls.class_id}: ${graduated.length} tốt nghiệp, ${notGraduated.length} chưa tốt nghiệp`
+      );
+    }
+
+    res.status(200).json({ message: "Đã xét tốt nghiệp lớp 12 thành công." });
+  } catch (err) {
+    console.error("[ClassService LỖI] Xét tốt nghiệp:", err.message);
+    res.status(500).json({ message: "Lỗi khi xét tốt nghiệp." });
+  }
+};
+
+function extractGradeAndSuffix(classId) {
+  const match = classId.match(/^(\d+)([A-Z0-9]+)$/);
+  if (!match) return null;
+  return {
+    grade: parseInt(match[1]),
+    suffix: match[2], // ví dụ: "A1"
+  };
+}
+
+// exports.promoteClasses = async (req, res) => {
+//   try {
+//     const { school_year } = req.body;
+
+//     if (!school_year) {
+//       return res.status(400).json({ message: 'Thiếu school_year' });
+//     }
+
+//     if (!/^\d{4}-\d{4}$/.test(school_year)) {
+//       return res.status(400).json({ message: 'school_year phải có định dạng YYYY-YYYY' });
+//     }
+
+//     const currentYear = new Date().getFullYear();
+//     const result = await promoteGrade10And11(currentYear, school_year);
+//     res.status(200).json({ message: 'Đã xử lý xong chuyển lớp', details: result });
+//   } catch (err) {
+//     console.error('Lỗi promote:', err.message);
+//     res.status(500).json({ message: 'Lỗi xử lý lên lớp', error: err.message });
+//   }
+// };
+
+// async function promoteGrade10And11(currentYear, school_year) {
+//   const classes = await Class.find({ is_graduated: false });
+//   const results = [];
+
+//   for (const cls of classes) {
+//     const parsed = extractGradeAndSuffix(cls.class_id);
+//     if (!parsed || parsed.grade >= 12) continue;
+
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     try {
+//       const response = await axios.post(`http://localhost:4002/api/students/promote-review`, {
+//         class_id: cls._id,
+//         school_year
+//       });
+
+//       const { promoted, repeated } = response.data;
+
+//       // Extract and validate student_ids
+//       const promotedIds = promoted
+//         .map(item => item.student_id)
+//         .filter(id => mongoose.Types.ObjectId.isValid(id))
+//         .map(id => new mongoose.Types.ObjectId(id));
+
+//       const repeatedIds = repeated
+//         .map(item => item.student_id)
+//         .filter(id => mongoose.Types.ObjectId.isValid(id))
+//         .map(id => new mongoose.Types.ObjectId(id));
+
+//       const newGrade = parsed.grade + 1;
+//       const newClassId = `${newGrade}${parsed.suffix}`;
+
+//       let newClass = await Class.findOne({ class_id: newClassId });
+//       if (!newClass) {
+//         newClass = await Class.create({
+//           class_id: newClassId,
+//           class_name: newClassId,
+//           class_teacher: cls.class_teacher,
+//           class_member: [],
+//           subject_teacher: cls.subject_teacher,
+//           is_graduated: false,
+//         }, { session });
+//       }
+
+//       newClass.class_member = [...newClass.class_member, ...promotedIds];
+//       await newClass.save({ session });
+
+//       cls.class_member = repeatedIds;
+//       await cls.save({ session });
+
+//       await session.commitTransaction();
+
+//       results.push({
+//         class_id: cls.class_id,
+//         status: 'success',
+//         promoted: promotedIds.length,
+//         repeated: repeatedIds.length
+//       });
+//     } catch (err) {
+//       await session.abortTransaction();
+//       console.error(`[ClassService LỖI] ❌ Lỗi khi xử lý lớp ${cls.class_id}:`, err.response?.data || err.message);
+//       results.push({
+//         class_id: cls.class_id,
+//         status: 'failed',
+//         error: err.response?.data || err.message
+//       });
+//     } finally {
+//       session.endSession();
+//     }
+//   }
+//   return results;
+// }
+
+exports.promoteClasses = async (req, res) => {
+  try {
+    const { school_year, class_id, promoted, repeated } = req.body;
+
+    console.log("[ClassService] Nhận yêu cầu promoteClasses:", { school_year, class_id, promoted, repeated });
+
+    if (!school_year || !class_id || !promoted || !repeated) {
+      return res.status(400).json({ message: "Thiếu school_year, class_id, promoted hoặc repeated" });
+    }
+
+    if (!/^\d{4}-\d{4}$/.test(school_year)) {
+      return res.status(400).json({ message: "school_year phải có định dạng YYYY-YYYY" });
+    }
+
+    if (!Array.isArray(promoted) || !Array.isArray(repeated)) {
+      return res.status(400).json({ message: "promoted và repeated phải là mảng" });
+    }
+
+    const currentYear = new Date().getFullYear();
+    const result = await promoteGrade10And11(currentYear, school_year, class_id, promoted, repeated);
+    res.status(200).json({ message: "Đã xử lý xong chuyển lớp", details: result });
+  } catch (err) {
+    console.error("Lỗi promote:", err.message);
+    res.status(500).json({ message: "Lỗi xử lý lên lớp", error: err.message });
+  }
+};
+
+
+// async function promoteGrade10And11(currentYear, school_year, class_id, promoted, repeated) {
+//   const cls = await Class.findOne({ class_id });
+//   if (!cls) {
+//     throw new Error(`Không tìm thấy lớp ${class_id}`);
+//   }
+
+//   if (cls.is_graduated) {
+//     return [{
+//       class_id,
+//       status: "failed",
+//       error: "Lớp đã tốt nghiệp, không thể chuyển lớp"
+//     }];
+//   }
+
+//   const parsed = extractGradeAndSuffix(cls.class_id);
+//   if (!parsed || parsed.grade >= 12) {
+//     return [{
+//       class_id,
+//       status: "failed",
+//       error: "Lớp không hợp lệ để chuyển (cấp lớp >= 12)"
+//     }];
+//   }
+
+//   const session = await mongoose.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // Validate student_ids
+//     const promotedIds = promoted
+//       .map(item => item.student_id)
+//       .filter(id => mongoose.Types.ObjectId.isValid(id))
+//       .map(id => new mongoose.Types.ObjectId(id));
+
+//     const repeatedIds = repeated
+//       .map(item => item.student_id)
+//       .filter(id => mongoose.Types.ObjectId.isValid(id))
+//       .map(id => new mongoose.Types.ObjectId(id));
+
+//     const newGrade = parsed.grade + 1;
+//     const newClassId = `${newGrade}${parsed.suffix}`;
+
+//     let newClass = await Class.findOne({ class_id: newClassId });
+//     if (!newClass) {
+//       newClass = await Class.create({
+//         class_id: newClassId,
+//         class_name: newClassId,
+//         class_teacher: cls.class_teacher,
+//         class_member: [],
+//         subject_teacher: cls.subject_teacher,
+//         is_graduated: false,
+//       }, { session });
+//     }
+
+//     newClass.class_member = [...newClass.class_member, ...promotedIds];
+//     await newClass.save({ session });
+
+//     cls.class_member = repeatedIds;
+//     await cls.save({ session });
+
+//     await session.commitTransaction();
+
+//     return [{
+//       class_id: cls.class_id,
+//       status: "success",
+//       promoted: promotedIds.length,
+//       repeated: repeatedIds.length
+//     }];
+//   } catch (err) {
+//     await session.abortTransaction();
+//     console.error(`[ClassService LỖI] ❌ Lỗi khi xử lý lớp ${cls.class_id}:`, err.message);
+//     return [{
+//       class_id,
+//       status: "failed",
+//       error: err.message
+//     }];
+//   } finally {
+//     session.endSession();
+//   }
+// }
+
+// function extractGradeAndSuffix(classId) {
+//   const match = classId.match(/^(\d+)([A-Za-z]*)$/);
+//   if (!match) return null;
+//   return {
+//     grade: parseInt(match[1], 10),
+//     suffix: match[2] || ""
+//   };
+// }
+
+async function promoteGrade10And11(currentYear, school_year, class_id, promoted, repeated) {
+  console.log(`[ClassService] Bắt đầu xử lý chuyển lớp cho ${class_id}`);
+
+  const cls = await Class.findOne({ class_id });
+  if (!cls) {
+    console.log(`[ClassService] Không tìm thấy lớp ${class_id}`);
+    return [{ class_id, status: "failed", error: `Không tìm thấy lớp ${class_id}` }];
+  }
+
+  console.log(`[ClassService] Tìm thấy lớp:`, cls);
+
+  if (cls.is_graduated) {
+    console.log(`[ClassService] Lớp ${class_id} đã tốt nghiệp`);
+    return [{ class_id, status: "failed", error: "Lớp đã tốt nghiệp, không thể chuyển lớp" }];
+  }
+
+  const parsed = extractGradeAndSuffix(cls.class_id);
+  console.log(`[ClassService] Parsed grade and suffix for ${cls.class_id}:`, parsed);
+  if (!parsed || parsed.grade >= 12) {
+    console.log(`[ClassService] Lớp ${class_id} không hợp lệ để chuyển (grade >= 12)`);
+    return [{ class_id, status: "failed", error: "Lớp không hợp lệ để chuyển (cấp lớp >= 12)" }];
+  }
+
+  console.log(`[ClassService] Lớp hợp lệ, bắt đầu giao dịch cho ${class_id}`);
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Fix: Use 'new' to instantiate ObjectId
+    const promotedIds = promoted.map(item => new mongoose.Types.ObjectId(item.student_id));
+    const repeatedIds = repeated.map(item => new mongoose.Types.ObjectId(item.student_id));
+
+    console.log(`[ClassService] Promoted IDs:`, promotedIds);
+    console.log(`[ClassService] Repeated IDs:`, repeatedIds);
+
+    const classMembers = cls.class_member.map(id => id.toString());
+    console.log(`[ClassService] Class Members:`, classMembers);
+
+    const invalidPromoted = promotedIds.filter(id => !classMembers.includes(id.toString()));
+    const invalidRepeated = repeatedIds.filter(id => !classMembers.includes(id.toString()));
+
+    if (invalidPromoted.length > 0 || invalidRepeated.length > 0) {
+      throw new Error(`Một số học sinh không thuộc lớp ${class_id}: Promoted: ${invalidPromoted.join(", ")}, Repeated: ${invalidRepeated.join(", ")}`);
+    }
+
+    const newGrade = parsed.grade + 1;
+    const newClassId = `${newGrade}${parsed.suffix}`;
+    console.log(`[ClassService] Tạo hoặc cập nhật lớp mới: ${newClassId}`);
+
+    let newClass = await Class.findOne({ class_id: newClassId });
+    if (!newClass) {
+      newClass = new Class({
+        class_id: newClassId,
+        class_name: newClassId,
+        class_teacher: cls.class_teacher,
+        class_member: [],
+        subject_teacher: cls.subject_teacher,
+        graduation_year: cls.graduation_year,
+        is_graduated: newGrade === 12,
+      });
+      await newClass.save({ session });
+      console.log(`[ClassService] Đã tạo lớp mới: ${newClassId}`);
+    }
+
+    newClass.class_member = [...new Set([...newClass.class_member, ...promotedIds])];
+    await newClass.save({ session });
+    console.log(`[ClassService] Đã cập nhật lớp ${newClassId} với thành viên:`, newClass.class_member);
+
+    cls.class_member = repeatedIds;
+    await cls.save({ session });
+    console.log(`[ClassService] Đã cập nhật lớp ${class_id} với thành viên còn lại:`, cls.class_member);
+
+    const updatedCls = await Class.findOne({ class_id }).session(session);
+    const updatedNewClass = await Class.findOne({ class_id: newClassId }).session(session);
+    console.log(`[ClassService] Xác nhận trong giao dịch - Lớp ${class_id}:`, updatedCls.class_member);
+    console.log(`[ClassService] Xác nhận trong giao dịch - Lớp ${newClassId}:`, updatedNewClass.class_member);
+
+    await session.commitTransaction();
+    console.log(`[ClassService] Giao dịch hoàn tất cho lớp ${class_id}`);
+
+    const finalCls = await Class.findOne({ class_id });
+    const finalNewClass = await Class.findOne({ class_id: newClassId });
+    console.log(`[ClassService] Xác nhận sau commit - Lớp ${class_id}:`, finalCls.class_member);
+    console.log(`[ClassService] Xác nhận sau commit - Lớp ${newClassId}:`, finalNewClass.class_member);
+
+    return [{
+      class_id: cls.class_id,
+      status: "success",
+      promoted: promotedIds.length,
+      repeated: repeatedIds.length
+    }];
+  } catch (err) {
+    await session.abortTransaction();
+    console.error(`[ClassService LỖI] ❌ Lớp ${class_id}:`, err.message);
+    return [{ class_id, status: "failed", error: err.message }];
+  } finally {
+    session.endSession();
+  }
+}
+
+function extractGradeAndSuffix(classId) {
+  console.log(`[ClassService] Extracting grade from classId: ${classId}`);
+  const match = classId.match(/^(\d{1,2})([A-Za-z0-9]*)$/); // Allow alphanumeric suffix
+  if (!match) {
+    console.log(`[ClassService] Không khớp định dạng cho ${classId}`);
+    return null;
+  }
+  const result = {
+    grade: parseInt(match[1], 10),
+    suffix: match[2] || ""
+  };
+  console.log(`[ClassService] Extracted:`, result);
+  return result;
+}
+// function extractGradeAndSuffix(classId) {
+//   const match = classId.match(/^(\d+)([A-Za-z]*)$/);
+//   if (!match) return null;
+//   return {
+//     grade: parseInt(match[1], 10),
+//     suffix: match[2] || ""
+//   };
+// }
+
+// exports.approval = async (req, res) => {
+//   try {
+//     const { class_id, class_name, school_year, students } = req.body;
+
+//     // Validate required fields
+//     if (!class_id || !class_name || !school_year || !students || !Array.isArray(students) || students.length === 0) {
+//       return res.status(400).json({ message: "Thiếu thông tin lớp, năm học hoặc danh sách học sinh." });
+//     }
+
+//     // Validate school year format
+//     if (!/^\d{4}-\d{4}$/.test(school_year)) {
+//       return res.status(400).json({ message: "Định dạng năm học không hợp lệ. Vui lòng dùng YYYY-YYYY." });
+//     }
+
+//     // Validate students array
+//     const invalidStudent = students.find(
+//       (s) =>
+//         !s.student_id ||
+//         !s.name ||
+//         !s.hk1?.gpa ||
+//         !s.hk1?.behavior ||
+//         !s.hk2?.gpa ||
+//         !s.hk2?.behavior
+//     );
+//     if (invalidStudent) {
+//       return res.status(400).json({ message: "Dữ liệu học sinh không hợp lệ. Vui lòng kiểm tra GPA và hạnh kiểm." });
+//     }
+
+//     // Create new approval document
+//     const approval = new Approval({
+//       class_id,
+//       class_name,
+//       school_year,
+//       students,
+//       submitted_by: req.userId // Use the authenticated teacher's ID
+//     });
+
+//     await approval.save();
+
+//     res.status(201).json({ message: "Đã gửi danh sách để duyệt thành công.", approvalId: approval._id });
+//   } catch (error) {
+//     console.error("Lỗi khi gửi duyệt:", error.message);
+//     res.status(500).json({ message: "Lỗi server" });
+//   }
+// };
+
+exports.approval = async (req, res) => {
+  try {
+    const { class_id, class_name, school_year, students } = req.body;
+
+    if (!class_id || !class_name || !school_year || !students || !Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({ message: "Thiếu thông tin lớp, năm học hoặc danh sách học sinh." });
+    }
+
+    if (!/^\d{4}-\d{4}$/.test(school_year)) {
+      return res.status(400).json({ message: "Định dạng năm học không hợp lệ. Vui lòng dùng YYYY-YYYY." });
+    }
+
+    const invalidStudent = students.find(
+      (s) => !s.student_id || !mongoose.Types.ObjectId.isValid(s.student_id) || !s.name || !s.hk1?.gpa || !s.hk1?.behavior || !s.hk2?.gpa || !s.hk2?.behavior
+    );
+    if (invalidStudent) {
+      return res.status(400).json({ message: "Dữ liệu học sinh không hợp lệ. Vui lòng kiểm tra student_id, GPA và hạnh kiểm." });
+    }
+
+    const approval = new Approval({
+      class_id,
+      class_name,
+      school_year,
+      students,
+      submitted_by: req.userId
+    });
+
+    await approval.save();
+
+    res.status(201).json({ message: "Đã gửi danh sách để duyệt thành công.", approvalId: approval._id });
+  } catch (error) {
+    console.error("Lỗi khi gửi duyệt:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.getApprovalPending = async (req, res) => {
+  try {
+    const pendingApprovals = await Approval.find({ status: "pending" }).lean();
+    if (!pendingApprovals || pendingApprovals.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    const transformedApprovals = pendingApprovals.map((approval) => ({
+      _id: approval._id,
+      class_id: approval.class_id,
+      class_name: approval.class_name,
+      school_year: approval.school_year,
+      students: approval.students.map((student) => ({
+        _id: student.student_id,
+        tdt_id: student.student_id,
+        name: student.name,
+        date_of_birth: "2008-01-01",
+        hk1_gpa: student.hk1.gpa,
+        hk1_behavior: student.hk1.behavior,
+        hk2_gpa: student.hk2.gpa,
+        hk2_behavior: student.hk2.behavior
+      }))
+    }));
+
+    res.status(200).json(transformedApprovals);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách chờ duyệt:", error.message);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+exports.approveApproval = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const approval = await Approval.findById(id);
+    if (!approval) return res.status(404).json({ message: "Không tìm thấy yêu cầu duyệt." });
+    if (approval.status !== "pending") return res.status(400).json({ message: "Yêu cầu đã được xử lý trước đó." });
+
+    const promotionResults = {
+      class_id: approval.class_id,
+      status: "success",
+      promoted: [],
+      repeated: [],
+      error: null
+    };
+
+    approval.students.forEach((student) => {
+      const avgGpa = (student.hk1.gpa + student.hk2.gpa) / 2;
+      const worstBehavior = ["Tốt", "Khá", "Trung bình", "Yếu"].indexOf(student.hk1.behavior) >
+                           ["Tốt", "Khá", "Trung bình", "Yếu"].indexOf(student.hk2.behavior)
+                           ? student.hk1.behavior
+                           : student.hk2.behavior;
+
+      if (avgGpa >= 5.0 && worstBehavior !== "Yếu") {
+        promotionResults.promoted.push({
+          student_id: student.student_id.toString(),
+          gpa: student.hk2.gpa,
+          behavior: student.hk2.behavior
+        });
+      } else {
+        let reason = "";
+        if (avgGpa < 5.0) reason = "GPA trung bình dưới 5.0";
+        else if (worstBehavior === "Yếu") reason = "Hạnh kiểm Yếu";
+        promotionResults.repeated.push({
+          student_id: student.student_id.toString(),
+          gpa: student.hk2.gpa,
+          behavior: student.hk2.behavior,
+          reason
+        });
+      }
+    });
+
+    console.log("[ApprovalService] Gửi yêu cầu đến promoteClasses:", {
+      school_year: approval.school_year,
+      class_id: approval.class_id,
+      promoted: promotionResults.promoted,
+      repeated: promotionResults.repeated
+    });
+
+    let promotionDetails = [];
+    try {
+      const promoteResponse = await axios.post(
+        "http://localhost:4000/api/classes/promote",
+        {
+          school_year: approval.school_year,
+          class_id: approval.class_id,
+          promoted: promotionResults.promoted,
+          repeated: promotionResults.repeated
+        },
+        { headers: { Authorization: `Bearer ${req.token}` } }
+      );
+      promotionDetails = promoteResponse.data.details;
+
+      console.log("[ApprovalService] Kết quả từ promoteClasses:", promotionDetails);
+
+      if (promotionDetails.length > 0 && promotionDetails[0].status !== "success") {
+        promotionResults.status = "failed";
+        promotionResults.error = promotionDetails[0].error || "Chuyển lớp thất bại";
+      }
+    } catch (promoteError) {
+      console.error("[ClassService LỖI] Lỗi khi gọi promoteClasses:", promoteError.response?.data || promoteError.message);
+      promotionResults.status = "failed";
+      promotionResults.error = "Không thể chuyển lớp: " + (promoteError.response?.data?.message || promoteError.message);
+    }
+
+    approval.status = "approved";
+    await approval.save();
+
+    res.status(200).json({
+      message: "Đã duyệt yêu cầu thành công",
+      promotionResults: [promotionResults],
+      promotionDetails
+    });
+  } catch (error) {
+    console.error("Lỗi khi duyệt yêu cầu:", error.message);
+    res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };
