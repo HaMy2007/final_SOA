@@ -122,7 +122,7 @@ export const menuItems: MenuItem[] = [
   {
     path: "teacherdashboard",
     label: "Xét duyệt",
-    icon: GrSchedule,
+    icon: FcAcceptDatabase,
     allowedRoles: ["advisor"],
   },
   {

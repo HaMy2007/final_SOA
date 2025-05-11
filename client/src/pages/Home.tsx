@@ -403,20 +403,6 @@ const Home = () => {
             <h1 className="text-2xl text-blue-950 font-semibold">Tiện ích</h1>
             <div className="grid grid-cols-12 gap-4">
               <Link
-                to={`/${role}/forum`}
-                className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
-              >
-                <MdForum className="w-12 h-12 text-amber-400" />
-                <span className="ml-2 text-xl">Diễn đàn</span>
-              </Link>
-              <Link
-                to={`/${role}/students`}
-                className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
-              >
-                <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
-                <span className="ml-2 text-xl">Thông tin học sinh</span>
-              </Link>
-              <Link
                 to={`/${role}/schedule`}
                 className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
               >
@@ -440,6 +426,36 @@ const Home = () => {
                 >
                   <RxDashboard className="w-12 h-12 text-amber-800" />
                   <span className="ml-2 text-xl">Tổng quan</span>
+                </Link>
+              ) : null}
+
+              {isHomeroomTeacher ? (
+                <Link
+                  to={`/${role}/teacherdashboard`}
+                  className=" col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <FcAcceptDatabase className="w-12 h-12 text-blue-900" />
+                  <span className="ml-2 text-xl">Xét duyệt</span>
+                </Link>
+              ) : null}
+
+              {isHomeroomTeacher ? (
+                <Link
+                  to={`/${role}/forum`}
+                  className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <MdForum className="w-12 h-12 text-amber-400" />
+                  <span className="ml-2 text-xl">Diễn đàn</span>
+                </Link>
+              ) : null}
+
+              {isHomeroomTeacher ? (
+                <Link
+                  to={`/${role}/students`}
+                  className="col-span-4 bg-white p-4 rounded-lg shadow-md flex justify-center items-center flex-col gap-2"
+                >
+                  <IoMdInformationCircle className="w-12 h-12 text-purple-400" />
+                  <span className="ml-2 text-xl">Thông tin học sinh</span>
                 </Link>
               ) : null}
 
